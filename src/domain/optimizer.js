@@ -1,4 +1,5 @@
 import { validateConfig, volumeLitres } from './locker.js';
+import { calculateFinalDimensions } from './dimensions.js';
 
 const SCORE_WEIGHTS = { widthFit: 0.12, heightFit: 0.12, spaceUse: 0.16, manufacturing: 0.16, accessibility: 0.14, balance: 0.10, cableRouting: 0.10, serviceAccess: 0.10 };
 const clamp = (value) => Math.max(0, Math.min(100, Number(value) || 0));
@@ -43,7 +44,7 @@ const buildGridCandidate = (lockers, config) => {
   const score = clamp(Object.entries(SCORE_WEIGHTS).reduce((total, [key, weight]) => total + metrics[key] * weight, 0));
   const layoutLockers = cells.map(({ row, column, locker }) => ({ ...locker, row, column }));
   const controllerSlotId = layoutLockers.find((locker) => locker.row === 0 && locker.column === columns - 1)?.id || layoutLockers[0]?.id || null;
-  return {
+  const candidate = {
     id: `layout-${columns}x${rows}`,
     columns,
     rows,
@@ -57,8 +58,10 @@ const buildGridCandidate = (lockers, config) => {
     internalVolumeLitres: Number(totalLockerVolume.toFixed(1)),
     cabinetVolumeLitres: Number(cabinetVolume.toFixed(1)),
     utilization: Number(((totalLockerVolume / cabinetVolume) * 100).toFixed(1)),
-    warnings: ['Overall cabinet dimensions are derived from the entered grid and locker definitions.'],
+    warnings: [],
   };
+  candidate.finalDimensions = calculateFinalDimensions(candidate, config.layout);
+  return candidate;
 };
 
 export const generateLayouts = (config) => {

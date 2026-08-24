@@ -8,7 +8,9 @@ import { generateLayouts } from '../src/domain/optimizer.js';
 
 test('JSON export preserves the schema version', () => {
   const config = createDefaultConfig();
-  assert.equal(JSON.parse(exportConfigJson(config)).schemaVersion, 1);
+  const exported = JSON.parse(exportConfigJson(config));
+  assert.equal(exported.schemaVersion, 1);
+  assert.equal(exported.layout.groundClearanceMm, 150);
 });
 
 test('manufacturing CSV has a header and quoted rows', () => {
@@ -34,4 +36,14 @@ test('generate action creates an active candidate', () => {
   const next = configReducer(edited, { type: 'FINISH_GENERATE', ...generated });
   assert.ok(next.config.activeCandidateId);
   assert.ok(next.config.candidates.length > 0);
+});
+
+test('ground clearance update preserves generated geometry and refreshes final dimensions', () => {
+  const initial = createInitialState(createDefaultConfig());
+  const before = initial.config.candidates[0].finalDimensions;
+  const next = configReducer(initial, { type: 'EDIT_LAYOUT', field: 'groundClearanceMm', value: 450 });
+  const after = next.config.candidates[0].finalDimensions;
+  assert.equal(next.config.layout.groundClearanceMm, 450);
+  assert.deepEqual([after.cabinetWidthMm, after.cabinetHeightMm, after.cabinetDepthMm], [before.cabinetWidthMm, before.cabinetHeightMm, before.cabinetDepthMm]);
+  assert.equal(after.installedTopMm - before.installedTopMm, 300);
 });

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createDefaultConfig } from '../src/app/defaultConfig.js';
 import { generateLayouts } from '../src/domain/optimizer.js';
 import { deriveManufacturing } from '../src/domain/manufacturing.js';
+import { calculateFinalDimensions } from '../src/domain/dimensions.js';
 
 const countByType = (lockers) => lockers.reduce((counts, locker) => {
   counts[locker.typeId] = (counts[locker.typeId] || 0) + 1;
@@ -58,4 +59,23 @@ test('controller uses an existing top-row cell without adding cabinet width', ()
   assert.ok(controllerSlot);
   assert.equal(controllerSlot.row, 0);
   assert.equal(candidate.dimensions.width, (candidate.columns * 260) + ((candidate.columns + 1) * 10) + (25 * 2));
+});
+
+test('final dimensions add ground clearance only to installed top', () => {
+  const config = createDefaultConfig();
+  const candidate = generateLayouts(config).candidates[0];
+  const finalDimensions = calculateFinalDimensions(candidate, config.layout);
+  assert.equal(finalDimensions.cabinetWidthMm, candidate.dimensions.width);
+  assert.equal(finalDimensions.cabinetHeightMm, candidate.dimensions.height);
+  assert.equal(finalDimensions.installedTopMm, candidate.dimensions.height + config.layout.groundClearanceMm);
+  assert.ok(candidate.finalDimensions);
+});
+
+test('changing ground clearance does not change fabricated geometry', () => {
+  const config = createDefaultConfig();
+  const candidate = generateLayouts(config).candidates[0];
+  const before = calculateFinalDimensions(candidate, config.layout);
+  const after = calculateFinalDimensions(candidate, { ...config.layout, groundClearanceMm: 450 });
+  assert.deepEqual([after.cabinetWidthMm, after.cabinetHeightMm, after.cabinetDepthMm], [before.cabinetWidthMm, before.cabinetHeightMm, before.cabinetDepthMm]);
+  assert.equal(after.installedTopMm - before.installedTopMm, 300);
 });

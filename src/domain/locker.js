@@ -34,7 +34,7 @@ export const createDefaultConfig = () => {
     project: { name: 'North Hub smart locker study', createdAt: now(), updatedAt: now() },
     lockerTypes: types,
     demand: { small: 15, medium: 10, large: 5 },
-    layout: { columns: 5, rows: 6 },
+    layout: { columns: 5, rows: 6, groundClearanceMm: 150 },
     constraints: { maxWidthMm: 1400, maxHeightMm: 2200, maxDepthMm: 600, dividerMm: 10, frameMm: 25, doorGapMm: 4, controllerWidthMm: 160, preferredModuleWidthMm: 300 },
     candidates: [], activeCandidateId: null, manufacturing: null,
   };
@@ -75,6 +75,7 @@ export const validateConfig = (config) => {
   if (!Number.isInteger(columns) || columns <= 0) errors.push('Layout columns must be a positive whole number.');
   if (!Number.isInteger(rows) || rows <= 0) errors.push('Layout rows must be a positive whole number.');
   if (Number.isInteger(columns) && Number.isInteger(rows) && columns > 0 && rows > 0 && columns * rows !== totalDemand) errors.push(`Layout grid has ${columns * rows} cells but demand contains ${totalDemand} lockers.`);
+  if (!Number.isFinite(Number(config.layout?.groundClearanceMm)) || Number(config.layout.groundClearanceMm) < 0) errors.push('Ground clearance must be zero or greater.');
   const maxLockerDepth = Math.max(0, ...config.lockerTypes.map((type) => Number(type.dimensions?.depth || 0)));
   if (Number(constraints.maxDepthMm) < maxLockerDepth) errors.push('Maximum cabinet depth is smaller than a locker depth.');
   const maxLockerWidth = Math.max(0, ...config.lockerTypes.map((type) => Number(type.dimensions?.width || 0)));

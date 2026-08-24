@@ -2,6 +2,7 @@ import { useMemo, useReducer } from 'react';
 import { cloneConfig, createDefaultConfig, validateConfig } from './defaultConfig.js';
 import { loadConfig, saveConfig } from './storage.js';
 import { deriveManufacturing } from '../domain/manufacturing.js';
+import { calculateFinalDimensions } from '../domain/dimensions.js';
 import { generateLayouts } from '../domain/optimizer.js';
 
 const timestamp = () => new Date().toISOString();
@@ -33,7 +34,9 @@ export const createInitialState = (storedConfig = loadConfig()) => {
   const base = cloneConfig(storedConfig || createDefaultConfig());
   if (base.candidates?.length && base.activeCandidateId) {
     const active = base.candidates.find((candidate) => candidate.id === base.activeCandidateId) || base.candidates[0];
-    return { config: { ...base, manufacturing: base.manufacturing || deriveManufacturing(base, active) }, errors: [], notice: 'Saved configuration restored.', activeView: 'setup', isGenerating: false };
+    const candidates = base.candidates.map((candidate) => ({ ...candidate, finalDimensions: calculateFinalDimensions(candidate, base.layout) }));
+    const activeWithDimensions = candidates.find((candidate) => candidate.id === active.id) || candidates[0];
+    return { config: { ...base, candidates, manufacturing: base.manufacturing || deriveManufacturing(base, activeWithDimensions) }, errors: [], notice: 'Saved configuration restored.', activeView: 'setup', isGenerating: false };
   }
   const generated = generateConfig(base);
   return { config: generated.config, errors: generated.errors, notice: generated.errors.length ? 'Review the highlighted inputs before generating.' : 'Sample configuration generated.', activeView: 'setup', isGenerating: false };
@@ -47,6 +50,18 @@ export const configReducer = (state, action) => {
       const next = clearGenerated(action.update(state.config));
       saveConfig(next);
       return { ...state, config: next, errors: [], notice: 'Configuration changed. Generate a new layout to refresh the design.' };
+    }
+    case 'EDIT_LAYOUT': {
+      const layout = { ...state.config.layout, [action.field]: action.value };
+      const geometryChanges = action.field === 'rows' || action.field === 'columns';
+      const next = geometryChanges ? clearGenerated({ ...state.config, layout }) : {
+        ...state.config,
+        layout,
+        candidates: state.config.candidates.map((candidate) => ({ ...candidate, finalDimensions: calculateFinalDimensions(candidate, layout) })),
+        project: { ...state.config.project, updatedAt: timestamp() },
+      };
+      saveConfig(next);
+      return { ...state, config: next, errors: [], notice: geometryChanges ? 'Grid changed. Generate the cabinet again to refresh geometry.' : 'Installation height updated. Fabrication geometry is unchanged.' };
     }
     case 'START_GENERATE':
       return { ...state, isGenerating: true, errors: [], notice: '' };
@@ -83,7 +98,7 @@ export const useConfigurator = () => {
     setView: (view) => dispatch({ type: 'SET_VIEW', view }),
     updateProject: (field, value) => dispatch({ type: 'EDIT_CONFIG', update: (config) => ({ ...config, project: { ...config.project, [field]: value } }) }),
     updateDemand: (typeId, value) => dispatch({ type: 'EDIT_CONFIG', update: (config) => ({ ...config, demand: { ...config.demand, [typeId]: Number(value) } }) }),
-    updateLayout: (field, value) => dispatch({ type: 'EDIT_CONFIG', update: (config) => ({ ...config, layout: { ...config.layout, [field]: Number(value) } }) }),
+    updateLayout: (field, value) => dispatch({ type: 'EDIT_LAYOUT', field, value: Number(value) }),
     updateLockerType: (typeId, path, value) => dispatch({ type: 'EDIT_CONFIG', update: (config) => ({ ...config, lockerTypes: config.lockerTypes.map((type) => type.id === typeId ? setNested(type, path, value) : type) }) }),
     updateConstraints: (field, value) => dispatch({ type: 'EDIT_CONFIG', update: (config) => ({ ...config, constraints: { ...config.constraints, [field]: Number(value) } }) }),
     generate: () => {
