@@ -133,6 +133,57 @@ Quantities are computed from the actual locker count, column count, module seams
 
 State transitions are explicit: edit configuration → validate → generate candidates → select candidate → derive manufacturing → export. Invalid input stays visible next to the field and prevents generation. A generation failure keeps the last valid active candidate and shows the reason.
 
+## Component hierarchy
+
+```text
+App
+├── Sidebar / navigation
+├── Topbar / active project status
+└── Active view
+    ├── ProjectSetupView
+    │   ├── DemandProfile
+    │   ├── CurrentEnvelopePreview
+    │   └── MetricCard[]
+    ├── LockerTypesView / LockerTypeEditor[]
+    ├── ConstraintsView
+    ├── GenerateView
+    │   ├── LockerLayoutSvg
+    │   ├── MetricCard[]
+    │   └── ScoreBreakdown
+    ├── CompareView / CandidateCard[] / LockerLayoutSvg
+    ├── ManufacturingView
+    │   ├── MaterialTable
+    │   ├── HardwareTable
+    │   └── ControllerArchitecture
+    └── ExportView
+        ├── JsonPreview
+        └── HandoffActions
+```
+
+## Configuration JSON example
+
+The persisted/exported shape is JSON-compatible and versioned so a later migration can transform old local files:
+
+```json
+{
+  "schemaVersion": 1,
+  "project": { "name": "North Hub smart locker study", "createdAt": "2026-08-24T00:00:00.000Z", "updatedAt": "2026-08-24T00:00:00.000Z" },
+  "demand": { "small": 15, "medium": 10, "large": 5 },
+  "constraints": { "maxWidthMm": 1400, "maxHeightMm": 2200, "maxDepthMm": 600, "dividerMm": 10, "frameMm": 25, "doorGapMm": 4, "controllerWidthMm": 160, "preferredModuleWidthMm": 300 },
+  "lockerTypes": [{ "id": "small", "code": "S", "dimensions": { "width": 260, "height": 180, "depth": 600 }, "capacityLitres": 28.1, "weightCapacityKg": 12 }],
+  "candidates": [],
+  "activeCandidateId": null,
+  "manufacturing": null
+}
+```
+
+## Development roadmap
+
+1. **Prototype complete** — validate demand, generate deterministic SVG alternatives, inspect score breakdown, derive the BOM, and export/import JSON locally.
+2. **Design-system hardening** — add schema migrations, richer constraint presets, editable manufacturing assumptions, and saved project snapshots.
+3. **Production geometry** — introduce a 3D/parametric CAD adapter, panel unfolding rules, door clearances, structural checks, and real module connection details.
+4. **Operational integration** — connect controller/lock vendors, add authenticated server persistence, role-based review, and production release approvals.
+
 ## Testing and acceptance
 
 The domain layer must have tests for default demand, invalid input, dimension constraint rejection, mixed-size packing, exact requested locker counts, deterministic ranking, score bounds, and manufacturing quantity derivation. The application must build with `npm run build`. Manual verification must confirm that editing a locker dimension changes SVG geometry and metrics, changing constraints removes invalid candidates, candidate selection updates manufacturing data, JSON export/import round-trips, and the dashboard remains usable at mobile width.
