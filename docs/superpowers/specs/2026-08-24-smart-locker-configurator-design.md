@@ -17,9 +17,9 @@ Replace the existing flight-booking demo with a local engineering dashboard that
 
 The application opens on a dashboard with a default sample project containing 15 small, 10 medium, and 5 large lockers. The left navigation switches between these views:
 
-1. **Project Setup** — project name, target locker quantities, and the active constraint set.
+1. **Project Setup** — project name, target locker quantities, and the exact row/column grid. The grid cell count must equal total demand.
 2. **Locker Types** — edit dimensions, capacity, weight limit, usage label, material, and hardware defaults for each locker type.
-3. **Constraints** — maximum cabinet width, height, depth, preferred module width, aisle/accessibility preferences, and manufacturing assumptions.
+3. **Constraints** — divider, frame, door-gap, and controller-package allowances. Overall cabinet width and height are outputs, not primary inputs.
 4. **Generate Layout** — run the deterministic optimizer and show the recommended layout with score and dimensions.
 5. **Compare Alternatives** — show the top candidates with compact SVG previews and metric deltas; selecting a candidate makes it the active design.
 6. **Manufacturing** — show derived materials, thicknesses, manufacturing methods, assembly strategy, controller module, and a bill of materials.
@@ -56,6 +56,8 @@ interface ConstraintSet {
   preferredModuleWidthMm: number;
 }
 
+interface GridSpec { columns: number; rows: number; }
+
 interface LockerInstance { id: string; typeId: LockerTypeId; column: number; row: number; }
 
 interface LayoutCandidate {
@@ -63,6 +65,9 @@ interface LayoutCandidate {
   columns: number;
   rows: number;
   lockers: LockerInstance[];
+  columnWidths: number[];
+  rowHeights: number[];
+  controllerSlotId: string | null;
   dimensions: { width: number; height: number; depth: number };
   metrics: { widthFit: number; heightFit: number; spaceUse: number; manufacturing: number; accessibility: number; balance: number; cableRouting: number; serviceAccess: number };
   score: number;
@@ -70,7 +75,7 @@ interface LayoutCandidate {
 }
 
 interface ManufacturingSpec {
-  materials: Array<{ name: string; material: string; thicknessMm: number; method: string; quantity: number }>;
+  materials: Array<{ name: string; material: string; thicknessMm: number; method: string; quantity: number; unit: string }>;
   assemblySteps: string[];
   hardware: Array<{ item: string; quantity: number; placement: string }>;
 }
@@ -80,6 +85,7 @@ interface CabinetConfig {
   project: { name: string; createdAt: string; updatedAt: string };
   lockerTypes: LockerType[];
   demand: Record<LockerTypeId, number>;
+  layout: GridSpec;
   constraints: ConstraintSet;
   candidates: LayoutCandidate[];
   activeCandidateId: string | null;
@@ -89,15 +95,15 @@ interface CabinetConfig {
 
 ## Optimization engine
 
-The optimizer validates positive dimensions, non-negative quantities, compatible depth, and a non-zero demand before searching. It enumerates column counts from 1 through the smallest practical bound derived from maximum width and preferred module width. For each column count it generates balanced column stacks using a deterministic best-fit assignment: larger lockers are placed first, then each next locker is assigned to the shortest current stack, breaking ties by column index.
+The optimizer validates positive dimensions, non-negative quantities, compatible depth, a non-zero demand, and an exact grid where `rows × columns === total demand`. It sorts the requested locker instances deterministically and assigns them to every cell in row-major order. There are no empty cells and no overall cabinet envelope is required from the user.
 
-Each candidate derives cabinet width from column widths plus dividers, height from the tallest stack plus frame and top/bottom allowances, and depth from the maximum locker depth plus door/frame allowance. Candidates outside any maximum constraint are rejected. Duplicate arrangements are removed by a canonical column signature.
+Each candidate derives every column width from the widest locker in that column, every row height from the tallest locker in that row, and depth from the deepest locker plus frame/door allowances. The outer cabinet is the sum of those row and column dimensions plus dividers and frame members. One existing top-row cell is marked controller-ready; it does not add a bay, column, or width.
 
 Metrics are normalized to 0–100:
 
 `score = 0.12 widthFit + 0.12 heightFit + 0.16 spaceUse + 0.16 manufacturing + 0.14 accessibility + 0.10 balance + 0.10 cableRouting + 0.10 serviceAccess`
 
-- `widthFit` and `heightFit` reward remaining clearance without excessive unused envelope.
+- `widthFit` and `heightFit` measure regularity across derived column widths and row heights; no arbitrary maximum envelope affects the result.
 - `spaceUse` measures locker volume divided by external cabinet volume.
 - `manufacturing` rewards repeated locker widths, fewer unique panel sizes, and fewer module seams.
 - `accessibility` penalizes tall stacks and rewards placing large/high-use units in the middle or lower zones.
@@ -105,7 +111,7 @@ Metrics are normalized to 0–100:
 - `cableRouting` rewards consistent vertical channels to an existing top-row locker assigned to the controller later.
 - `serviceAccess` rewards a top-row controller-ready locker and layouts that can be serviced by module.
 
-The engine returns candidates sorted descending by score, with the top 6 retained for comparison. It never silently changes requested quantities; warnings explain any fallback or tradeoff.
+The engine returns the exact calculated grid as the active candidate. It never silently changes requested quantities; a mismatch between grid capacity and demand is a validation error.
 
 ## Visualization
 
@@ -169,6 +175,7 @@ The persisted/exported shape is JSON-compatible and versioned so a later migrati
   "schemaVersion": 1,
   "project": { "name": "North Hub smart locker study", "createdAt": "2026-08-24T00:00:00.000Z", "updatedAt": "2026-08-24T00:00:00.000Z" },
   "demand": { "small": 15, "medium": 10, "large": 5 },
+  "layout": { "columns": 5, "rows": 6 },
   "constraints": { "maxWidthMm": 1400, "maxHeightMm": 2200, "maxDepthMm": 600, "dividerMm": 10, "frameMm": 25, "doorGapMm": 4, "controllerWidthMm": 160, "preferredModuleWidthMm": 300 },
   "lockerTypes": [{ "id": "small", "code": "S", "dimensions": { "width": 260, "height": 180, "depth": 600 }, "capacityLitres": 28.1, "weightCapacityKg": 12 }],
   "candidates": [],

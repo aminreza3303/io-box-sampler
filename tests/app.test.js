@@ -29,7 +29,7 @@ test('edit action clears stale generated candidates', () => {
 
 test('generate action creates an active candidate', () => {
   const initial = createInitialState(createDefaultConfig());
-  const edited = configReducer(initial, { type: 'EDIT_CONFIG', update: (config) => ({ ...config, demand: { ...config.demand, small: 16 } }) });
+  const edited = configReducer(initial, { type: 'EDIT_CONFIG', update: (config) => ({ ...config, project: { ...config.project, name: 'Updated project' } }) });
   const generated = generateConfig(edited.config);
   const next = configReducer(edited, { type: 'FINISH_GENERATE', ...generated });
   assert.ok(next.config.activeCandidateId);

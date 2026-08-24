@@ -83,6 +83,7 @@ export const useConfigurator = () => {
     setView: (view) => dispatch({ type: 'SET_VIEW', view }),
     updateProject: (field, value) => dispatch({ type: 'EDIT_CONFIG', update: (config) => ({ ...config, project: { ...config.project, [field]: value } }) }),
     updateDemand: (typeId, value) => dispatch({ type: 'EDIT_CONFIG', update: (config) => ({ ...config, demand: { ...config.demand, [typeId]: Number(value) } }) }),
+    updateLayout: (field, value) => dispatch({ type: 'EDIT_CONFIG', update: (config) => ({ ...config, layout: { ...config.layout, [field]: Number(value) } }) }),
     updateLockerType: (typeId, path, value) => dispatch({ type: 'EDIT_CONFIG', update: (config) => ({ ...config, lockerTypes: config.lockerTypes.map((type) => type.id === typeId ? setNested(type, path, value) : type) }) }),
     updateConstraints: (field, value) => dispatch({ type: 'EDIT_CONFIG', update: (config) => ({ ...config, constraints: { ...config.constraints, [field]: Number(value) } }) }),
     generate: () => {

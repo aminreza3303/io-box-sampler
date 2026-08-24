@@ -17,17 +17,17 @@ The default project starts with 15 small, 10 medium, and 5 large lockers. Config
 
 ## Workflow
 
-1. **Project setup** — set the project name and demand mix.
+1. **Project setup** — set the project name, demand mix, exact columns, and exact rows. The grid must contain exactly the requested number of boxes.
 2. **Locker types** — edit width, height, depth, capacity, weight limit, material, thickness, usage, and hardware defaults.
-3. **Constraints** — set maximum cabinet envelope and construction allowances.
-4. **Generate layout** — produce feasible layouts and select the highest-ranked candidate.
+3. **Constraints** — set construction allowances such as divider, frame, door gap, and controller-package width. Overall cabinet dimensions are calculated, not entered.
+4. **Generate layout** — calculate the complete cabinet envelope from the filled grid.
 5. **Compare alternatives** — inspect the top candidates as compact SVG previews and select a different trade-off when needed.
 6. **Manufacturing** — review the derived material schedule, hardware architecture, the existing top-row controller locker, cable routing, ventilation, and assembly sequence.
 7. **Export** — download the complete JSON configuration or a manufacturing BOM CSV. JSON packages can be imported into another local session.
 
 ## Optimization model
 
-The optimizer enumerates feasible column counts, assigns requested lockers into balanced vertical stacks, rejects candidates outside the configured envelope, removes duplicate arrangements, and retains the top six alternatives.
+The optimizer requires `rows × columns` to equal total demand, fills every cell, calculates each column width from the widest box in that column, calculates each row height from the tallest box in that row, and derives the complete outer cabinet dimensions. One existing top-row cell is marked controller-ready for later assignment; it never adds cabinet width.
 
 The composite score is normalized to 0–100:
 

@@ -27,6 +27,14 @@ test('optimizer rejects a depth-incompatible configuration', () => {
   assert.match(result.errors[0], /depth/i);
 });
 
+test('optimizer rejects a grid whose cells do not equal demand', () => {
+  const config = createDefaultConfig();
+  config.layout = { columns: 4, rows: 8 };
+  const result = generateLayouts(config);
+  assert.deepEqual(result.candidates, []);
+  assert.match(result.errors[0], /32 cells/);
+});
+
 test('ranking is deterministic and scores stay in range', () => {
   const first = generateLayouts(createDefaultConfig()).candidates;
   const second = generateLayouts(createDefaultConfig()).candidates;
