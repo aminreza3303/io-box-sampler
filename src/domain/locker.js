@@ -71,6 +71,8 @@ export const validateConfig = (config) => {
   if (totalDemand === 0) errors.push('At least one locker is required.');
   const maxLockerDepth = Math.max(0, ...config.lockerTypes.map((type) => Number(type.dimensions?.depth || 0)));
   if (Number(constraints.maxDepthMm) < maxLockerDepth) errors.push('Maximum cabinet depth is smaller than a locker depth.');
+  const maxLockerWidth = Math.max(0, ...config.lockerTypes.map((type) => Number(type.dimensions?.width || 0)));
+  if (Number(constraints.controllerWidthMm) > maxLockerWidth) errors.push('Controller package width must fit inside an existing locker.');
   return { valid: errors.length === 0, errors };
 };
 

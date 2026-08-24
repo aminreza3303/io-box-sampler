@@ -45,15 +45,16 @@ const buildCandidate = (columnCount, lockers, config) => {
   });
   const { constraints } = config;
   const moduleWidth = Math.max(...config.lockerTypes.map((type) => type.dimensions.width));
-  const width = (columnCount * moduleWidth) + ((columnCount + 1) * constraints.dividerMm) + (constraints.frameMm * 2) + constraints.controllerWidthMm;
+  const width = (columnCount * moduleWidth) + ((columnCount + 1) * constraints.dividerMm) + (constraints.frameMm * 2);
   const height = Math.max(...stacks.map((stack) => stackHeight(stack, types))) + (constraints.frameMm * 2) + (constraints.doorGapMm * 2);
   const depth = Math.max(...config.lockerTypes.map((type) => type.dimensions.depth));
   if (width > constraints.maxWidthMm || height > constraints.maxHeightMm || depth > constraints.maxDepthMm) return null;
   const { metrics, score, totalLockerVolume, cabinetVolume } = scoreCandidate(stacks, config, { width, height, depth }, lockers, types);
   const layoutLockers = stacks.flatMap((stack, column) => stack.map((locker, row) => ({ ...locker, column, row })));
+  const controllerSlotId = layoutLockers.find((locker) => locker.row === 0 && locker.column === columnCount - 1)?.id || layoutLockers.find((locker) => locker.row === 0)?.id || null;
   return {
     id: `layout-${columnCount}-${stacks.map((stack) => stack.map((locker) => types.get(locker.typeId).code).join('')).join('-')}`,
-    columns: columnCount, rows: Math.max(...stacks.map((stack) => stack.length)), lockers: layoutLockers,
+    columns: columnCount, rows: Math.max(...stacks.map((stack) => stack.length)), lockers: layoutLockers, controllerSlotId,
     dimensions: { width, height, depth }, metrics, score: Number(score.toFixed(1)),
     internalVolumeLitres: Number(totalLockerVolume.toFixed(1)), cabinetVolumeLitres: Number(cabinetVolume.toFixed(1)),
     utilization: Number(((totalLockerVolume / cabinetVolume) * 100).toFixed(1)),

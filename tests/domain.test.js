@@ -40,4 +40,14 @@ test('manufacturing quantities reflect the selected candidate', () => {
   const spec = deriveManufacturing(config, candidate);
   assert.equal(spec.hardware.find((item) => item.item === 'Electronic lock').quantity, candidate.lockers.length);
   assert.ok(spec.materials.some((item) => item.name === 'Locker door sheet'));
+  assert.ok(spec.materials.some((item) => item.name === 'Controller locker fit-out'));
+});
+
+test('controller uses an existing top-row cell without adding cabinet width', () => {
+  const config = createDefaultConfig();
+  const candidate = generateLayouts(config).candidates[0];
+  const controllerSlot = candidate.lockers.find((locker) => locker.id === candidate.controllerSlotId);
+  assert.ok(controllerSlot);
+  assert.equal(controllerSlot.row, 0);
+  assert.equal(candidate.dimensions.width, (candidate.columns * 260) + ((candidate.columns + 1) * 10) + (25 * 2));
 });

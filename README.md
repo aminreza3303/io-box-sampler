@@ -22,7 +22,7 @@ The default project starts with 15 small, 10 medium, and 5 large lockers. Config
 3. **Constraints** — set maximum cabinet envelope and construction allowances.
 4. **Generate layout** — produce feasible layouts and select the highest-ranked candidate.
 5. **Compare alternatives** — inspect the top candidates as compact SVG previews and select a different trade-off when needed.
-6. **Manufacturing** — review the derived material schedule, hardware architecture, controller bay, cable routing, ventilation, and assembly sequence.
+6. **Manufacturing** — review the derived material schedule, hardware architecture, the existing top-row controller locker, cable routing, ventilation, and assembly sequence.
 7. **Export** — download the complete JSON configuration or a manufacturing BOM CSV. JSON packages can be imported into another local session.
 
 ## Optimization model

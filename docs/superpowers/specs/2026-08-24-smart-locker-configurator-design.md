@@ -102,14 +102,14 @@ Metrics are normalized to 0–100:
 - `manufacturing` rewards repeated locker widths, fewer unique panel sizes, and fewer module seams.
 - `accessibility` penalizes tall stacks and rewards placing large/high-use units in the middle or lower zones.
 - `balance` penalizes uneven column heights and concentrates less mass at the top.
-- `cableRouting` rewards consistent vertical channels and a controller bay adjacent to the densest locker module.
-- `serviceAccess` rewards a clear controller compartment and layouts that can be serviced by module.
+- `cableRouting` rewards consistent vertical channels to an existing top-row locker assigned to the controller later.
+- `serviceAccess` rewards a top-row controller-ready locker and layouts that can be serviced by module.
 
 The engine returns candidates sorted descending by score, with the top 6 retained for comparison. It never silently changes requested quantities; warnings explain any fallback or tradeoff.
 
 ## Visualization
 
-`LockerLayoutSvg` receives a `LayoutCandidate`, locker type definitions, and constraints. It calculates a fit-to-viewBox scale and renders an outer frame, each locker rectangle, type code, door swing/lock marker, row/column guides, dimension arrows, controller bay, and a legend. Every locker has an accessible `<title>` and keyboard-focusable group. SVG rendering is pure from props so candidates can be compared without shared mutable state.
+`LockerLayoutSvg` receives a `LayoutCandidate`, locker type definitions, and constraints. It calculates a fit-to-viewBox scale and renders one complete outer frame containing every locker cell, type code, door swing/lock marker, row/column guides, dimension arrows, and a dashed controller-ready marker on one top-row cell. Every locker has an accessible `<title>` and keyboard-focusable group. SVG rendering is pure from props so candidates can be compared without shared mutable state.
 
 ## Manufacturing and hardware derivation
 
@@ -119,9 +119,9 @@ The manufacturing layer derives a production summary from the active candidate:
 - 1.2 mm formed door sheets and 1.0–1.2 mm divider/back panels.
 - CNC laser cutting, press-brake bending, PEM fasteners, bolted modular assembly, and final powder coating.
 - Per locker: electronic lock, door sensor, status indicator, hinge set, seal, and fasteners.
-- Shared: controller compartment, power supply, network module, lock controller, sensor controller, vertical cable channel, reinforcement, and ventilation paths.
+- Shared: power supply, network module, lock controller, sensor controller, vertical cable channel, reinforcement, and ventilation paths; the controller hardware is installed inside one existing top-row locker later.
 
-Quantities are computed from the actual locker count, column count, module seams, and controller bay. The UI labels these as suggestions and keeps them editable at the configuration level.
+Quantities are computed from the actual locker count, column count, module seams, and one existing controller-ready locker. The controller package is installed later inside that locker; no extra width, column, or bay is added to the cabinet.
 
 ## Application architecture
 
