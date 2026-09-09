@@ -4,6 +4,25 @@ import { taskPhaseTypes, type DomainActor } from "../../lib/validators";
 
 export type ProposalInput = { title: string; summary?: string; scope: "PRIVATE" | "TEAM" | "PROJECT" | "ORGANIZATION"; projectId?: string; teamId?: string; createdById: string; payload: Record<string, unknown> };
 
+export async function listProposals(actor: DomainActor) {
+  const where = actor.role === "CEO"
+    ? { status: "PROPOSED" as const }
+    : {
+      status: "PROPOSED" as const,
+      OR: [
+        { scope: "PRIVATE" as const, createdById: actor.userId },
+        ...(actor.teamIds?.length ? [{ scope: "TEAM" as const, teamId: { in: actor.teamIds } }] : []),
+        ...(actor.projectIds?.length ? [{ scope: "PROJECT" as const, projectId: { in: actor.projectIds } }] : []),
+      ],
+    };
+
+  return prisma.planProposal.findMany({
+    where,
+    include: { project: true, team: true },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
 export async function createProposalFromAgent(input: ProposalInput) {
   if (input.scope === "ORGANIZATION" && !input.projectId && input.teamId) throw new Error("invalid organization proposal scope");
   return prisma.planProposal.create({ data: { ...input, payload: input.payload as Prisma.InputJsonValue } });
