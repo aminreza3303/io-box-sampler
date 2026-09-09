@@ -10,7 +10,7 @@ npm --prefix apps/command-center exec prisma db seed
 npm run dev:command-center -- --hostname 0.0.0.0
 ```
 
-سپس روی همان شبکه از `http://<LAN-IP>:3000/login` وارد شوید. login و RBAC فعال است؛ پورت را روی مودم port-forward نکنید.
+سپس روی همان شبکه از `http://<LAN-IP>:3000/login` وارد شوید؛ روی این سیستم آدرس فعلی `http://192.168.1.61:3000/login` است. login و RBAC فعال است؛ پورت را روی مودم port-forward نکنید. اگر Windows Firewall دسترسی را بست، برای شبکه Private یک inbound rule برای TCP/3000 بسازید.
 
 ## Docker برای سرور
 
