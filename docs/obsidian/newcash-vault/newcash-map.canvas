@@ -1,0 +1,824 @@
+{
+  "nodes": [
+    {
+      "id": "title",
+      "type": "text",
+      "x": 0,
+      "y": -500,
+      "width": 1700,
+      "height": 120,
+      "color": "6",
+      "text": "# 🗺️ نقشهٔ دامنه‌های نیوکاش\n**۲۸ دامنه + روابط محصول + نقشهٔ راه پنج‌گامی**\n🔵 زیرساخت · 🔴 هسته P0 · 🟠 مالی P1 · 🟡 اکوسیستم P2 · 🟢 پلتفرم\n*یک گره را انتخاب کنید تا وابستگی‌ها و مصرف‌کننده‌هایش در Obsidian مشخص شوند.*"
+    },
+    {
+      "id": "infra-label",
+      "type": "text",
+      "x": 0,
+      "y": -330,
+      "width": 1180,
+      "height": 45,
+      "text": "## زیرساخت افقی — قبل از همهٔ فیچرها طراحی و تأیید شود"
+    },
+    {
+      "id": "core-label",
+      "type": "text",
+      "x": 0,
+      "y": -20,
+      "width": 1000,
+      "height": 45,
+      "text": "## هستهٔ نئوبانک — مسیرهای حیاتی P0"
+    },
+    {
+      "id": "finance-label",
+      "type": "text",
+      "x": 0,
+      "y": 250,
+      "width": 1400,
+      "height": 45,
+      "text": "## محصولات مالی و عملیات — P1"
+    },
+    {
+      "id": "ecosystem-label",
+      "type": "text",
+      "x": 0,
+      "y": 710,
+      "width": 1500,
+      "height": 45,
+      "text": "## اکوسیستم — خدمات مکمل و تجربهٔ کاربر P2"
+    },
+    {
+      "id": "platform-label",
+      "type": "text",
+      "x": 200,
+      "y": 960,
+      "width": 1200,
+      "height": 45,
+      "text": "## پلتفرم کلاینت — عرضی"
+    },
+    {
+      "id": "currency",
+      "type": "text",
+      "x": 0,
+      "y": -250,
+      "width": 360,
+      "height": 180,
+      "color": "5",
+      "text": "## 💱 ارز و تبدیل\n**زیرساخت افقی · P0**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "limits",
+      "type": "text",
+      "x": 410,
+      "y": -250,
+      "width": 360,
+      "height": 180,
+      "color": "5",
+      "text": "## 🚦 موتور سقف‌ها\n**زیرساخت افقی · P0**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "policy",
+      "type": "text",
+      "x": 820,
+      "y": -250,
+      "width": 360,
+      "height": 180,
+      "color": "5",
+      "text": "## 🔐 پالیسی و دسترسی\n**زیرساخت افقی · P0**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "kyc",
+      "type": "text",
+      "x": 0,
+      "y": 20,
+      "width": 300,
+      "height": 180,
+      "color": "1",
+      "text": "## 🪪 هویت و KYC\n**هستهٔ نئوبانک · P0**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "wallet",
+      "type": "text",
+      "x": 340,
+      "y": 20,
+      "width": 300,
+      "height": 180,
+      "color": "1",
+      "text": "## 👛 کیف پول چندارزی\n**هستهٔ نئوبانک · P0**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "card",
+      "type": "text",
+      "x": 680,
+      "y": 20,
+      "width": 300,
+      "height": 180,
+      "color": "1",
+      "text": "## 💳 کارت بانکی\n**هستهٔ نئوبانک · P0**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "transfer",
+      "type": "text",
+      "x": 1020,
+      "y": 20,
+      "width": 300,
+      "height": 180,
+      "color": "1",
+      "text": "## ➡️ انتقال وجه\n**هستهٔ نئوبانک · P0**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "qr",
+      "type": "text",
+      "x": 1360,
+      "y": 20,
+      "width": 300,
+      "height": 180,
+      "color": "1",
+      "text": "## 📱 پرداخت QR پذیرندگان\n**هستهٔ نئوبانک · P0**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "fx-market",
+      "type": "text",
+      "x": 0,
+      "y": 300,
+      "width": 300,
+      "height": 180,
+      "color": "2",
+      "text": "## 🏦 بازار خرید و فروش ارز\n**محصولات مالی و عملیات · P1**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "loan",
+      "type": "text",
+      "x": 340,
+      "y": 300,
+      "width": 300,
+      "height": 180,
+      "color": "2",
+      "text": "## 🏛️ وام\n**محصولات مالی و عملیات · P1**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "gold",
+      "type": "text",
+      "x": 680,
+      "y": 300,
+      "width": 300,
+      "height": 180,
+      "color": "2",
+      "text": "## 🥇 طلا\n**محصولات مالی و عملیات · P1**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "insurance",
+      "type": "text",
+      "x": 1020,
+      "y": 300,
+      "width": 300,
+      "height": 180,
+      "color": "2",
+      "text": "## 🛡️ بیمه\n**محصولات مالی و عملیات · P1**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "special-offer",
+      "type": "text",
+      "x": 1360,
+      "y": 300,
+      "width": 300,
+      "height": 180,
+      "color": "2",
+      "text": "## 🎁 موتور Special Offer\n**محصولات مالی و عملیات · P1**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "buy-toman",
+      "type": "text",
+      "x": 0,
+      "y": 520,
+      "width": 300,
+      "height": 170,
+      "color": "2",
+      "text": "## 💵 خرید تومان\n**محصولات مالی و عملیات · P1**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "tickets",
+      "type": "text",
+      "x": 340,
+      "y": 520,
+      "width": 300,
+      "height": 170,
+      "color": "2",
+      "text": "## ✈️ بلیت\n**محصولات مالی و عملیات · P1**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "hotel",
+      "type": "text",
+      "x": 680,
+      "y": 520,
+      "width": 300,
+      "height": 170,
+      "color": "2",
+      "text": "## 🏨 رزرو هتل\n**محصولات مالی و عملیات · P1**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "agents",
+      "type": "text",
+      "x": 1020,
+      "y": 520,
+      "width": 300,
+      "height": 170,
+      "color": "2",
+      "text": "## 🤝 شبکهٔ نمایندگان\n**محصولات مالی و عملیات · P1**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "admin-panel",
+      "type": "text",
+      "x": 1360,
+      "y": 520,
+      "width": 300,
+      "height": 170,
+      "color": "2",
+      "text": "## 🖥️ پنل ادمین و وب\n**محصولات مالی و عملیات · P1**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "topup",
+      "type": "text",
+      "x": 0,
+      "y": 760,
+      "width": 280,
+      "height": 150,
+      "color": "3",
+      "text": "## 📶 شارژ و اینترنت\n**اکوسیستم · P2**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "rates",
+      "type": "text",
+      "x": 320,
+      "y": 760,
+      "width": 280,
+      "height": 150,
+      "color": "3",
+      "text": "## 📊 نمایش نرخ ارز\n**اکوسیستم · P2**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "snapp",
+      "type": "text",
+      "x": 640,
+      "y": 760,
+      "width": 280,
+      "height": 150,
+      "color": "3",
+      "text": "## 🚕 اسنپ\n**اکوسیستم · P2**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "support",
+      "type": "text",
+      "x": 960,
+      "y": 760,
+      "width": 280,
+      "height": 150,
+      "color": "3",
+      "text": "## 💬 چت و پشتیبانی\n**اکوسیستم · P2**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "donations",
+      "type": "text",
+      "x": 1280,
+      "y": 760,
+      "width": 280,
+      "height": 150,
+      "color": "3",
+      "text": "## 🕌 نذورات\n**اکوسیستم · P2**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "profile",
+      "type": "text",
+      "x": 1600,
+      "y": 760,
+      "width": 280,
+      "height": 150,
+      "color": "3",
+      "text": "## ⚙️ پروفایل و امنیت\n**اکوسیستم · P2**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "transactions",
+      "type": "text",
+      "x": 1920,
+      "y": 760,
+      "width": 280,
+      "height": 150,
+      "color": "3",
+      "text": "## 📄 سفارشات و تراکنش‌ها\n**اکوسیستم · P2**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "i18n",
+      "type": "text",
+      "x": 200,
+      "y": 1010,
+      "width": 340,
+      "height": 180,
+      "color": "4",
+      "text": "## 🌍 چندزبانه\n**پلتفرم کلاینت · عرضی**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "redesign",
+      "type": "text",
+      "x": 590,
+      "y": 1010,
+      "width": 340,
+      "height": 180,
+      "color": "4",
+      "text": "## 🎨 بازطراحی UI/UX\n**پلتفرم کلاینت · عرضی**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "mobile",
+      "type": "text",
+      "x": 980,
+      "y": 1010,
+      "width": 340,
+      "height": 180,
+      "color": "4",
+      "text": "## 📲 بازنویسی موبایل\n**پلتفرم کلاینت · عرضی**\n- خلاصه و قرارداد دامنه در داشبورد /domains\n- وابستگی‌ها با edgeهای همین نقشه مشخص‌اند\n- کارت کامل در پوشهٔ دامنه‌ها قابل توسعه است"
+    },
+    {
+      "id": "roadmap-label",
+      "type": "text",
+      "x": 0,
+      "y": 1230,
+      "width": 1500,
+      "height": 45,
+      "text": "## 🟣 نقشهٔ راه — از سند دامنه تا تجربهٔ چندزبانه"
+    },
+    {
+      "id": "discovery",
+      "type": "text",
+      "x": 0,
+      "y": 1300,
+      "width": 300,
+      "height": 170,
+      "color": "6",
+      "text": "## گام ۰ · کشف\n**۱ ماه**\n۲۸ کارت دامنه، Policy، سقف‌ها، قراردادها و الزامات نظارتی\n**خروج:** امضای سند دامنه"
+    },
+    {
+      "id": "foundation",
+      "type": "text",
+      "x": 340,
+      "y": 1300,
+      "width": 300,
+      "height": 170,
+      "color": "6",
+      "text": "## گام ۱ · زیرساخت\n**۲ ماه**\nLedger چندارزی، سقف‌ها، Policy و audit\n**خروج:** تأیید سند Ledger"
+    },
+    {
+      "id": "core-step",
+      "type": "text",
+      "x": 680,
+      "y": 1300,
+      "width": 300,
+      "height": 170,
+      "color": "6",
+      "text": "## گام ۲ · هسته\n**۴ ماه**\nKYC، کارت، انتقال، QR و shadow-run\n**خروج:** پاریتهٔ عملکردی"
+    },
+    {
+      "id": "financial-step",
+      "type": "text",
+      "x": 1020,
+      "y": 1300,
+      "width": 300,
+      "height": 170,
+      "color": "6",
+      "text": "## گام ۳ · مالی\n**۴ ماه**\nوام، طلا، بیمه و بازار تومان/دینار\n**خروج:** مجوزهای فعال"
+    },
+    {
+      "id": "ecosystem-step",
+      "type": "text",
+      "x": 1360,
+      "y": 1300,
+      "width": 300,
+      "height": 170,
+      "color": "6",
+      "text": "## گام ۴ · تجربه\n**۴ ماه**\nاکوسیستم، چندزبانه، UI/UX و تصمیم موبایل\n**خروج:** انتخاب فناوری موبایل"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "fromNode": "currency",
+      "toNode": "wallet",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "کیف‌های بر اساس ارز"
+    },
+    {
+      "id": "edge-2",
+      "fromNode": "currency",
+      "toNode": "fx-market",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "بازار ارز"
+    },
+    {
+      "id": "edge-3",
+      "fromNode": "currency",
+      "toNode": "rates",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "نمایش نرخ"
+    },
+    {
+      "id": "edge-4",
+      "fromNode": "currency",
+      "toNode": "tickets",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "ارز تسویه"
+    },
+    {
+      "id": "edge-5",
+      "fromNode": "currency",
+      "toNode": "hotel",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "ارز تسویه"
+    },
+    {
+      "id": "edge-6",
+      "fromNode": "currency",
+      "toNode": "qr",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "ارز پذیرنده"
+    },
+    {
+      "id": "edge-7",
+      "fromNode": "limits",
+      "toNode": "wallet",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "کنترل عملیات"
+    },
+    {
+      "id": "edge-8",
+      "fromNode": "limits",
+      "toNode": "transfer",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "سقف انتقال"
+    },
+    {
+      "id": "edge-9",
+      "fromNode": "limits",
+      "toNode": "fx-market",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "سقف FX"
+    },
+    {
+      "id": "edge-10",
+      "fromNode": "limits",
+      "toNode": "loan",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "سقف اعتبار"
+    },
+    {
+      "id": "edge-11",
+      "fromNode": "limits",
+      "toNode": "qr",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "سقف پرداخت"
+    },
+    {
+      "id": "edge-12",
+      "fromNode": "policy",
+      "toNode": "kyc",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "مجوز بررسی"
+    },
+    {
+      "id": "edge-13",
+      "fromNode": "policy",
+      "toNode": "wallet",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "دسترسی موجودی"
+    },
+    {
+      "id": "edge-14",
+      "fromNode": "policy",
+      "toNode": "card",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "عملیات کارت"
+    },
+    {
+      "id": "edge-15",
+      "fromNode": "policy",
+      "toNode": "transfer",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "مجوز انتقال"
+    },
+    {
+      "id": "edge-16",
+      "fromNode": "policy",
+      "toNode": "qr",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "دسترسی پذیرنده"
+    },
+    {
+      "id": "edge-17",
+      "fromNode": "policy",
+      "toNode": "agents",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "نقش نماینده"
+    },
+    {
+      "id": "edge-18",
+      "fromNode": "policy",
+      "toNode": "admin-panel",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "پنل ادمین"
+    },
+    {
+      "id": "edge-19",
+      "fromNode": "kyc",
+      "toNode": "wallet",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "سطح کاربر"
+    },
+    {
+      "id": "edge-20",
+      "fromNode": "kyc",
+      "toNode": "loan",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "اعتبارسنجی"
+    },
+    {
+      "id": "edge-21",
+      "fromNode": "kyc",
+      "toNode": "limits",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "سطح سقف"
+    },
+    {
+      "id": "edge-22",
+      "fromNode": "wallet",
+      "toNode": "card",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "شارژ کارت"
+    },
+    {
+      "id": "edge-23",
+      "fromNode": "wallet",
+      "toNode": "transfer",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "مبدأ انتقال"
+    },
+    {
+      "id": "edge-24",
+      "fromNode": "wallet",
+      "toNode": "qr",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "کسر پرداخت"
+    },
+    {
+      "id": "edge-25",
+      "fromNode": "wallet",
+      "toNode": "buy-toman",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "شارژ تومان"
+    },
+    {
+      "id": "edge-26",
+      "fromNode": "wallet",
+      "toNode": "fx-market",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "تسویه معامله"
+    },
+    {
+      "id": "edge-27",
+      "fromNode": "wallet",
+      "toNode": "transactions",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "ledger و تاریخچه"
+    },
+    {
+      "id": "edge-28",
+      "fromNode": "wallet",
+      "toNode": "tickets",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "پرداخت بلیت"
+    },
+    {
+      "id": "edge-29",
+      "fromNode": "wallet",
+      "toNode": "hotel",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "پرداخت هتل"
+    },
+    {
+      "id": "edge-30",
+      "fromNode": "qr",
+      "toNode": "special-offer",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "اعمال تخفیف"
+    },
+    {
+      "id": "edge-31",
+      "fromNode": "special-offer",
+      "toNode": "admin-panel",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "مدیریت کمپین"
+    },
+    {
+      "id": "edge-32",
+      "fromNode": "fx-market",
+      "toNode": "rates",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "نرخ مرجع"
+    },
+    {
+      "id": "edge-33",
+      "fromNode": "loan",
+      "toNode": "transactions",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "برنامه بازپرداخت"
+    },
+    {
+      "id": "edge-34",
+      "fromNode": "gold",
+      "toNode": "currency",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "ارزش‌گذاری"
+    },
+    {
+      "id": "edge-35",
+      "fromNode": "insurance",
+      "toNode": "currency",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "حق‌بیمه"
+    },
+    {
+      "id": "edge-36",
+      "fromNode": "agents",
+      "toNode": "buy-toman",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "کانال شارژ"
+    },
+    {
+      "id": "edge-37",
+      "fromNode": "agents",
+      "toNode": "card",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "خدمات کارت"
+    },
+    {
+      "id": "edge-38",
+      "fromNode": "agents",
+      "toNode": "tickets",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "فروش بلیت"
+    },
+    {
+      "id": "edge-39",
+      "fromNode": "admin-panel",
+      "toNode": "limits",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "تنظیم سقف"
+    },
+    {
+      "id": "edge-40",
+      "fromNode": "admin-panel",
+      "toNode": "policy",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "اعمال مجوز"
+    },
+    {
+      "id": "edge-41",
+      "fromNode": "topup",
+      "toNode": "wallet",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "کسر از کیف"
+    },
+    {
+      "id": "edge-42",
+      "fromNode": "snapp",
+      "toNode": "wallet",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "پرداخت سرویس"
+    },
+    {
+      "id": "edge-43",
+      "fromNode": "support",
+      "toNode": "policy",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "دسترسی پشتیبان"
+    },
+    {
+      "id": "edge-44",
+      "fromNode": "profile",
+      "toNode": "policy",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "امنیت حساب"
+    },
+    {
+      "id": "edge-45",
+      "fromNode": "transactions",
+      "toNode": "support",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "پشتیبانی سفارش"
+    },
+    {
+      "id": "edge-46",
+      "fromNode": "i18n",
+      "toNode": "support",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "زبان پشتیبانی"
+    },
+    {
+      "id": "edge-47",
+      "fromNode": "i18n",
+      "toNode": "redesign",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "RTL/LTR"
+    },
+    {
+      "id": "edge-48",
+      "fromNode": "i18n",
+      "toNode": "mobile",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "قرارداد زبان"
+    },
+    {
+      "id": "edge-49",
+      "fromNode": "redesign",
+      "toNode": "mobile",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "سیستم دیزاین"
+    },
+    {
+      "id": "edge-50",
+      "fromNode": "discovery",
+      "toNode": "foundation",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "کارت‌های کامل"
+    },
+    {
+      "id": "edge-51",
+      "fromNode": "foundation",
+      "toNode": "core-step",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "زیرساخت آماده"
+    },
+    {
+      "id": "edge-52",
+      "fromNode": "core-step",
+      "toNode": "financial-step",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "هستهٔ قابل اتکا"
+    },
+    {
+      "id": "edge-53",
+      "fromNode": "financial-step",
+      "toNode": "ecosystem-step",
+      "fromSide": "right",
+      "toSide": "left",
+      "label": "مجوز و پایداری"
+    }
+  ]
+}

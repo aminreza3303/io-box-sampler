@@ -7,6 +7,7 @@ import { Button } from "../ui/button";
 
 const navigation = [
   { href: "/command-center", label: "اتاق فرمان" },
+  { href: "/domains", label: "نقشه دامنه" },
   { href: "/projects", label: "پروژه‌ها" },
   { href: "/teams", label: "تیم‌ها و افراد" },
   { href: "/backlog", label: "بک‌لاگ" },

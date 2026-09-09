@@ -23,7 +23,9 @@ docker compose up --build
 ## مسیرهای اصلی
 
 - `/command-center` — نمای timeline و taskها
+- `/domains` — نقشهٔ ۲۸ دامنهٔ نیوکاش، روابط، قواعد و نقشهٔ راه تعاملی
 - `/projects`, `/teams`, `/backlog`, `/risks` — مدیریت پرتفولیو
 - `/agents` — health و اجرای Hermes/OMP
 - `/ceo/memory`, `/ceo/goals`, `/ceo/scenarios`, `/ceo/proposals` — اتاق مدیرعامل
 - `/audit` و `/api/metrics` — ردپا و شاخص‌ها
+- Obsidian محلی: `docs/obsidian/newcash-vault/`؛ فایل اصلی `newcash-map.canvas` است و می‌توان همین پوشه را به‌عنوان vault باز کرد.
