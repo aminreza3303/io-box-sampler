@@ -3,3 +3,7 @@ dist
 .env.local
 .env.*.local
 !.env.example
+.codex_tmp/
+outputs/
+apps/command-center/.next/
+apps/command-center/tsconfig.tsbuildinfo

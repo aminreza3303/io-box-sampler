@@ -53,6 +53,31 @@
 .identity-confirmed b, .identity-confirmed span { display: block; }
 .identity-confirmed b { font-size: 10px; margin-bottom: 4px; }
 
+.resource-selector {
+  border: 1px solid #dceae8;
+  background: #fbfefd;
+  border-radius: 11px;
+  padding: 17px;
+  margin: 14px 0 18px;
+}
+.resource-selector-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.resource-selector-heading h3 { color: #284b57; font-size: 13px; margin: 5px 0 0; }
+.selector-hint { color: #7e9b98; font-size: 8px; white-space: nowrap; }
+.resource-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.resource-option { position: relative; display: grid; grid-template-columns: 34px 1fr 22px; align-items: center; gap: 9px; min-height: 66px; padding: 10px; border: 1px solid #e0e9ea; border-radius: 9px; cursor: pointer; transition: border-color .15s, background .15s; }
+.resource-option.selected { background: #f1fbf8; border-color: #9bdacc; }
+.resource-option input { position: absolute; opacity: 0; pointer-events: none; }
+.resource-option-icon { width: 32px; height: 32px; display: grid; place-items: center; color: #81999f; background: #f0f4f5; border-radius: 8px; }
+.resource-option.selected .resource-option-icon { color: #1a987f; background: #dff5ee; }
+.resource-option b, .resource-option small { display: block; }
+.resource-option b { color: #405d67; font-size: 10px; margin-bottom: 4px; }
+.resource-option small { color: #91a0a5; font-size: 8px; line-height: 1.5; }
+.resource-option > i { width: 20px; height: 20px; display: grid; place-items: center; color: #fff; background: #d8e1e2; border-radius: 6px; font-style: normal; }
+.resource-option.selected > i { background: #20a58c; }
+.resource-selector-note { display: flex; align-items: center; gap: 5px; color: #80979b; font-size: 8px; margin: 12px 0 0; }
+.resource-selector-note .icon { color: #4ca393; }
+.empty-resources { color: #8b9ea2; font-size: 9px; margin: 4px 0 0; }
+
 @media (max-width: 860px) {
   .progress-steps { grid-template-columns: repeat(10, minmax(22px, 1fr)); overflow-x: auto; padding-bottom: 2px; }
 }
@@ -60,4 +85,6 @@
 @media (max-width: 600px) {
   .progress-steps { min-width: 500px; }
   .demo-payment, .passport-card { padding: 14px; }
+  .resource-options { grid-template-columns: 1fr; }
+  .resource-selector-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
 }
