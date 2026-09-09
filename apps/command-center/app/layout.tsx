@@ -4,7 +4,11 @@ import { AppNav } from "../components/navigation/app-nav";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "مقرفرماندهی",
+  title: {
+    default: "مقر فرماندهی",
+    template: "%s | مقر فرماندهی",
+  },
+  description: "مرکز فرماندهی پروژه‌ها، تیم‌ها و فرایندهای نیوکاش، شاطی و تراز",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

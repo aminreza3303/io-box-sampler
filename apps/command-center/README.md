@@ -22,10 +22,12 @@ docker compose up --build
 
 ## مسیرهای اصلی
 
-- `/command-center` — نمای timeline و taskها
+- `/command-center` — نمای خط زمانی فعالیت‌ها و چهار فاز هر کار
 - `/domains` — نقشهٔ ۲۸ دامنهٔ نیوکاش، روابط، قواعد و نقشهٔ راه تعاملی
+- `/operations`, `/finance`, `/admin` — فرایندهای عملیات، کنترل مالی و حاکمیت ادمین
+- `/ai` — گفت‌وگوی اجرایی با Hermes مادر و حافظهٔ اجراهای محلی
 - `/projects`, `/teams`, `/backlog`, `/risks` — مدیریت پرتفولیو
-- `/agents` — health و اجرای Hermes/OMP
+- `/agents` — سلامت و اجرای Hermes/OMP
 - `/ceo/memory`, `/ceo/goals`, `/ceo/scenarios`, `/ceo/proposals` — اتاق مدیرعامل
 - `/audit` و `/api/metrics` — ردپا و شاخص‌ها
-- Obsidian محلی: `docs/obsidian/newcash-vault/`؛ فایل اصلی `newcash-map.canvas` است و می‌توان همین پوشه را به‌عنوان vault باز کرد.
+- مستندات پشتیبان نقشه در `docs/obsidian/newcash-vault/` نگه‌داری می‌شوند؛ تجربهٔ اصلی دانش محصول در `/domains` وبی است و برای استفاده نیاز به بازکردن Obsidian ندارد.
