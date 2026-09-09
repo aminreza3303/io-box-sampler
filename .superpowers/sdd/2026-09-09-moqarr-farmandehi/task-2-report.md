@@ -2,7 +2,7 @@
 
 ## Status
 
-COMPLETE — the focused review-fix round is implemented and verified. Changes remain isolated to `apps/command-center` plus this report; the legacy Vite files and unrelated artifacts were not touched.
+DONE / COMMITTED — the focused review-fix round is implemented and verified. Changes remain isolated to `apps/command-center` plus this report; the legacy Vite files and unrelated artifacts were not touched.
 
 ## Delivered Work
 
@@ -38,4 +38,4 @@ The seed command was run from `apps/command-center`, where `prisma.config.ts` re
 
 ## Commit
 
-Pending: `fix: close task 2 review findings`
+Committed: `24142eb007a06ddd3fd57e5aadded215b952f4a0` (`fix: close task 2 review findings`)
