@@ -51,7 +51,7 @@ export async function verifySessionToken(token: string): Promise<SessionPayload>
     const expectedBytes = Uint8Array.from(atob(expected.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - expected.length % 4) % 4)), (char) => char.charCodeAt(0));
     let mismatch = 0;
     for (let index = 0; index < expectedBytes.length; index += 1) mismatch |= signatureBytes[index] ^ expectedBytes[index];
-    if (mismatch !== 0) throw new Error("invalid session signature");
+    if (mismatch !== 0 || signature !== expected) throw new Error("invalid session signature");
     const payload = JSON.parse(new TextDecoder().decode(Uint8Array.from(base64UrlDecode(encodedPayload), (char) => char.charCodeAt(0)))) as SessionPayload;
     if (typeof payload.sub !== "string" || typeof payload.exp !== "number" || payload.exp <= Date.now()) throw new Error("expired session");
     return payload;
