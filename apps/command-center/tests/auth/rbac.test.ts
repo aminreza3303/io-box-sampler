@@ -42,5 +42,15 @@ describe("role and scope permissions", () => {
     expect(() => assertPermission(manager, "approve_proposal", {})).toThrow("not allowed");
     expect(canApproveProposal(manager, { scope: "PROJECT" })).toBe(false);
     expect(canApproveProposal(manager, { scope: "TEAM" })).toBe(false);
+    expect(canApproveProposal(manager, { scope: "PROJECT", projectId: "project-1", teamId: "team-1" })).toBe(false);
+    expect(canApproveProposal(manager, { scope: "PROJECT", teamId: "team-1" })).toBe(false);
+    expect(() => assertPermission(manager, "mutate_project", { projectId: "project-1", teamId: "team-1" })).toThrow("not allowed");
+  });
+
+  it("validates proposal shape before granting CEO approval", () => {
+    const ceo = actor("CEO", [], []);
+    expect(canApproveProposal(ceo, { scope: "PROJECT" })).toBe(false);
+    expect(canApproveProposal(ceo, { scope: "PROJECT", projectId: "project-1", teamId: "team-1" })).toBe(false);
+    expect(canApproveProposal(ceo, { scope: "ORGANIZATION" })).toBe(true);
   });
 });

@@ -23,6 +23,8 @@
 - `npx prisma db seed`: PASS — completed against the existing local database without reset.
 - Live local credential check: PASS — `ceo@command-center.local` with `ceo-demo-password` returned a public session user with no password hash.
 - Auth regression tests: PASS — 12 tests.
+- Final RBAC hardening: proposal and permission scopes are now mutually exclusive and shape-validated before CEO or manager approval; regression suite: PASS — 13 auth tests.
+- Final `npm run build`: PASS — login/auth routes and middleware compiled.
 
 ## Scope
 
