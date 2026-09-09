@@ -1,0 +1,5 @@
+import { Input } from "../ui/input";
+
+export function FilterBar({ filters, onChange }: { filters: Record<string, string>; onChange: (key: string, value: string) => void }) {
+  return <div className="flex flex-wrap items-center gap-2"><Input aria-label="جست‌وجوی فعالیت" placeholder="جست‌وجوی فعالیت…" value={filters.q ?? ""} onChange={(event) => onChange("q", event.target.value)} /><select aria-label="فاز" className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm" value={filters.phase ?? ""} onChange={(event) => onChange("phase", event.target.value)}><option value="">همه فازها</option><option value="PRODUCT">محصول</option><option value="DESIGN">طراحی</option><option value="DEVELOPMENT">توسعه</option><option value="DELIVERY">تحویل</option></select><select aria-label="وضعیت" className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm" value={filters.status ?? ""} onChange={(event) => onChange("status", event.target.value)}><option value="">همه وضعیت‌ها</option><option value="TODO">در صف</option><option value="IN_PROGRESS">در حال انجام</option><option value="BLOCKED">مسدود</option><option value="DONE">تمام‌شده</option></select></div>;
+}

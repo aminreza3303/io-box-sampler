@@ -43,10 +43,13 @@ export const updateTaskPhaseSchema = z.object({
 export const commandCenterSnapshotFiltersSchema = z.object({
   projectId: z.string().min(1).optional(),
   teamId: z.string().min(1).optional(),
+  assigneeId: z.string().min(1).optional(),
   status: z.enum(["BACKLOG", "TODO", "IN_PROGRESS", "BLOCKED", "DONE", "CANCELLED"]).optional(),
-}).default({});
+  phase: z.enum(taskPhaseTypes).optional(),
+  zoom: z.enum(["day", "week", "month"]).default("day"),
+}).default({ zoom: "day" });
 
 export type CreateProjectInput = z.input<typeof createProjectSchema>;
 export type CreateTaskInput = z.input<typeof createTaskSchema>;
 export type UpdateTaskPhasePatch = z.input<typeof updateTaskPhaseSchema>;
-export type CommandCenterSnapshotFilters = z.infer<typeof commandCenterSnapshotFiltersSchema>;
+export type CommandCenterSnapshotFilters = z.input<typeof commandCenterSnapshotFiltersSchema>;

@@ -62,6 +62,8 @@ export async function listCommandCenterSnapshot(
     team: { archivedAt: null },
     ...(scopedTeamIds ? { teamId: { in: scopedTeamIds } } : {}),
     ...(filters.status ? { status: filters.status } : {}),
+    ...(filters.assigneeId ? { assigneeId: filters.assigneeId } : {}),
+    ...(filters.phase ? { phases: { some: { phaseType: filters.phase } } } : {}),
   };
   const artifactWhere = {
     projectId: { in: projectIds },
@@ -69,10 +71,18 @@ export async function listCommandCenterSnapshot(
     ...(scopedTeamIds ? { OR: [{ teamId: null }, { teamId: { in: scopedTeamIds } }] } : {}),
   };
 
-  const [tasks, backlogItems, sprints, goals, risks, issues, decisions] = await Promise.all([
+  const userPromise = "user" in prisma && prisma.user
+    ? prisma.user.findMany({
+      where: { archivedAt: null, teamMemberships: { some: { archivedAt: null, ...(scopedTeamIds ? { teamId: { in: scopedTeamIds } } : { team: { projectId: { in: projectIds } } }) } } },
+      select: { id: true, email: true, displayName: true, role: true, teamMemberships: { where: { archivedAt: null }, select: { teamId: true } } },
+      orderBy: { displayName: "asc" },
+    })
+    : Promise.resolve([]);
+
+  const [tasks, backlogItems, sprints, goals, risks, issues, decisions, users] = await Promise.all([
     prisma.task.findMany({
       where: taskWhere,
-      include: { phases: { orderBy: { phaseType: "asc" } }, team: true, project: true },
+      include: { phases: { orderBy: { phaseType: "asc" } }, team: true, project: true, assignee: true },
       orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
     }),
     prisma.backlogItem.findMany({ where: artifactWhere, orderBy: { position: "asc" } }),
@@ -81,9 +91,21 @@ export async function listCommandCenterSnapshot(
     prisma.risk.findMany({ where: artifactWhere, orderBy: { priority: "desc" } }),
     prisma.issue.findMany({ where: artifactWhere, orderBy: { priority: "desc" } }),
     prisma.decision.findMany({ where: artifactWhere, orderBy: { createdAt: "desc" } }),
+    userPromise,
   ]);
 
-  return { projects, tasks, backlogItems, sprints, goals, risks, issues, decisions };
+  const normalizedProjects = projects.map(({ teams: _teams, ...project }) => project);
+  const teams = projects.flatMap((project) => project.teams);
+  const normalizedTasks = tasks.map(({ phases: taskPhases, assignee, ...task }) => ({
+    ...task,
+    assignee: assignee ? { id: assignee.id, displayName: assignee.displayName, email: assignee.email } : null,
+  }));
+  const phases = tasks.flatMap((task) => task.phases);
+  const normalizedUsers = users.map(({ teamMemberships, ...user }) => ({
+    ...user,
+    teamIds: teamMemberships.map((membership) => membership.teamId),
+  }));
+  return { projects: normalizedProjects, teams, users: normalizedUsers, tasks: normalizedTasks, phases, backlogItems, sprints, goals, risks, issues, decisions };
 }
 
 export type CommandCenterSnapshot = Awaited<ReturnType<typeof listCommandCenterSnapshot>>;
