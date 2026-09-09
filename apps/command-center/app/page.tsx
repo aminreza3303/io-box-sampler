@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+
 export default function Home() {
-  return <main><h1>مقرفرماندهی</h1></main>;
+  redirect("/command-center");
 }
