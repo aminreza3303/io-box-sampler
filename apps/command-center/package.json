@@ -10,7 +10,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@prisma/client": "latest",
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
     "class-variance-authority": "latest",
     "clsx": "latest",
     "lucide-react": "latest",
@@ -18,16 +19,20 @@
     "react": "latest",
     "react-dom": "latest",
     "tailwind-merge": "latest",
-    "zod": "latest"
+    "zod": "latest",
+    "pg": "8.16.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "latest",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "prisma": "latest",
+    "@types/pg": "8.15.5",
+    "dotenv": "16.6.1",
+    "prisma": "7.10.0",
     "tailwindcss": "latest",
+    "tsx": "4.21.0",
     "typescript": "latest",
-    "vitest": "latest"
+    "vitest": "3.2.4"
   }
 }

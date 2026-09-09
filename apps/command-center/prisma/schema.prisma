@@ -1,0 +1,391 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CEO
+  MANAGER
+  MEMBER
+}
+
+enum TaskStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  DONE
+  CANCELLED
+}
+
+enum TaskPhaseType {
+  PRODUCT
+  DESIGN
+  DEVELOPMENT
+  DELIVERY
+}
+
+enum TaskPhaseStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  BLOCKED
+  COMPLETE
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ProposalStatus {
+  DRAFT
+  PROPOSED
+  ACCEPTED
+  REJECTED
+  SUPERSEDED
+}
+
+enum MemoryScope {
+  PRIVATE
+  TEAM
+  PROJECT
+  ORGANIZATION
+}
+
+enum SprintStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id               String           @id @default(cuid())
+  email            String           @unique
+  displayName      String
+  role             Role             @default(MEMBER)
+  teamMemberships  TeamMember[]
+  createdProjects  Project[]        @relation("ProjectCreator")
+  createdTasks     Task[]           @relation("TaskCreator")
+  assignedTasks    Task[]           @relation("TaskAssignee")
+  ownedGoals       Goal[]           @relation("GoalOwner")
+  createdDecisions Decision[]       @relation("DecisionCreator")
+  createdBacklog   BacklogItem[]    @relation("BacklogCreator")
+  auditEvents      AuditEvent[]     @relation("AuditActor")
+  memories         Memory[]         @relation("MemoryAuthor")
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  archivedAt       DateTime?
+
+  @@index([role, archivedAt])
+}
+
+model Project {
+  id           String        @id @default(cuid())
+  name         String
+  code         String        @unique
+  description  String?
+  createdById  String
+  createdBy    User          @relation("ProjectCreator", fields: [createdById], references: [id])
+  teams        Team[]
+  tasks        Task[]
+  goals        Goal[]
+  risks        Risk[]
+  issues       Issue[]
+  decisions    Decision[]
+  sprints      Sprint[]
+  backlogItems BacklogItem[]
+  auditEvents  AuditEvent[]
+  memories     Memory[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  archivedAt   DateTime?
+
+  @@index([archivedAt, name])
+}
+
+model Team {
+  id           String        @id @default(cuid())
+  name         String
+  slug         String        @unique
+  projectId    String
+  project      Project       @relation(fields: [projectId], references: [id])
+  memberships  TeamMember[]
+  tasks        Task[]
+  goals        Goal[]
+  risks        Risk[]
+  issues       Issue[]
+  decisions    Decision[]
+  sprints      Sprint[]
+  backlogItems BacklogItem[]
+  auditEvents  AuditEvent[]
+  memories     Memory[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  archivedAt   DateTime?
+
+  @@index([projectId, archivedAt])
+}
+
+model TeamMember {
+  id         String    @id @default(cuid())
+  teamId     String
+  userId     String
+  role       Role
+  team       Team      @relation(fields: [teamId], references: [id])
+  user       User      @relation(fields: [userId], references: [id])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  archivedAt DateTime?
+
+  @@unique([teamId, userId])
+  @@index([userId, archivedAt])
+}
+
+model Task {
+  id               String           @id @default(cuid())
+  projectId        String
+  teamId           String
+  sprintId         String?
+  backlogItemId    String?
+  createdById      String
+  assigneeId       String?
+  title            String
+  description      String?
+  status           TaskStatus       @default(TODO)
+  priority         Priority         @default(MEDIUM)
+  dueDate          DateTime?
+  position         Int              @default(0)
+  project          Project          @relation(fields: [projectId], references: [id])
+  team             Team             @relation(fields: [teamId], references: [id])
+  sprint           Sprint?          @relation(fields: [sprintId], references: [id])
+  backlogItem      BacklogItem?     @relation(fields: [backlogItemId], references: [id])
+  createdBy        User             @relation("TaskCreator", fields: [createdById], references: [id])
+  assignee         User?            @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  phases           TaskPhase[]
+  dependencies     TaskDependency[] @relation("TaskDependencies")
+  dependents       TaskDependency[] @relation("TaskDependents")
+  risks            Risk[]
+  issues           Issue[]
+  decisions        Decision[]
+  auditEvents      AuditEvent[]
+  memories         Memory[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  archivedAt       DateTime?
+
+  @@unique([projectId, title])
+  @@index([projectId, status, dueDate])
+  @@index([teamId, status, dueDate])
+  @@index([sprintId, status])
+}
+
+model TaskPhase {
+  id         String          @id @default(cuid())
+  taskId     String
+  phaseType  TaskPhaseType
+  status     TaskPhaseStatus @default(NOT_STARTED)
+  notes      String?
+  dueDate    DateTime?
+  startedAt  DateTime?
+  completedAt DateTime?
+  task       Task            @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@unique([taskId, phaseType])
+  @@index([phaseType, status, dueDate])
+}
+
+model TaskDependency {
+  id            String   @id @default(cuid())
+  taskId        String
+  dependsOnId   String
+  task          Task     @relation("TaskDependencies", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOn     Task     @relation("TaskDependents", fields: [dependsOnId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+
+  @@unique([taskId, dependsOnId])
+  @@index([dependsOnId])
+}
+
+model Goal {
+  id          String    @id @default(cuid())
+  projectId   String
+  teamId      String?
+  ownerId     String?
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  dueDate     DateTime?
+  project     Project   @relation(fields: [projectId], references: [id])
+  team        Team?     @relation(fields: [teamId], references: [id])
+  owner       User?     @relation("GoalOwner", fields: [ownerId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  archivedAt  DateTime?
+
+  @@unique([projectId, title])
+  @@index([projectId, status, dueDate])
+  @@index([teamId, status])
+}
+
+model Risk {
+  id          String   @id @default(cuid())
+  projectId   String
+  teamId      String?
+  taskId      String?
+  title       String
+  description String?
+  priority    Priority @default(MEDIUM)
+  status      TaskStatus @default(TODO)
+  mitigation  String?
+  dueDate     DateTime?
+  project     Project  @relation(fields: [projectId], references: [id])
+  team        Team?    @relation(fields: [teamId], references: [id])
+  task        Task?    @relation(fields: [taskId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  archivedAt  DateTime?
+
+  @@unique([projectId, title])
+  @@index([projectId, status, priority])
+  @@index([teamId, status])
+}
+
+model Issue {
+  id          String   @id @default(cuid())
+  projectId   String
+  teamId      String?
+  taskId      String?
+  title       String
+  description String?
+  priority    Priority @default(MEDIUM)
+  status      TaskStatus @default(TODO)
+  dueDate     DateTime?
+  project     Project  @relation(fields: [projectId], references: [id])
+  team        Team?    @relation(fields: [teamId], references: [id])
+  task        Task?    @relation(fields: [taskId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  archivedAt  DateTime?
+
+  @@unique([projectId, title])
+  @@index([projectId, status, priority])
+  @@index([teamId, status])
+}
+
+model Decision {
+  id          String         @id @default(cuid())
+  projectId   String
+  teamId      String?
+  taskId      String?
+  createdById String
+  title       String
+  context     String?
+  outcome     String?
+  status      ProposalStatus @default(DRAFT)
+  project     Project        @relation(fields: [projectId], references: [id])
+  team        Team?          @relation(fields: [teamId], references: [id])
+  task        Task?          @relation(fields: [taskId], references: [id])
+  createdBy   User           @relation("DecisionCreator", fields: [createdById], references: [id])
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  archivedAt  DateTime?
+
+  @@unique([projectId, title])
+  @@index([projectId, status, createdAt])
+  @@index([teamId, status])
+}
+
+model Sprint {
+  id         String       @id @default(cuid())
+  projectId  String
+  teamId     String?
+  name       String
+  goal       String?
+  status     SprintStatus @default(PLANNED)
+  startDate  DateTime
+  endDate    DateTime
+  project    Project      @relation(fields: [projectId], references: [id])
+  team       Team?        @relation(fields: [teamId], references: [id])
+  tasks      Task[]
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  archivedAt DateTime?
+
+  @@unique([projectId, name])
+  @@index([projectId, status, startDate])
+  @@index([teamId, status])
+}
+
+model BacklogItem {
+  id          String     @id @default(cuid())
+  projectId   String
+  teamId      String?
+  createdById String
+  title       String
+  description String?
+  priority    Priority   @default(MEDIUM)
+  status      TaskStatus @default(BACKLOG)
+  position    Int        @default(0)
+  project     Project    @relation(fields: [projectId], references: [id])
+  team        Team?      @relation(fields: [teamId], references: [id])
+  createdBy   User       @relation("BacklogCreator", fields: [createdById], references: [id])
+  tasks       Task[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  archivedAt  DateTime?
+
+  @@unique([projectId, title])
+  @@index([projectId, status, position])
+  @@index([teamId, status])
+}
+
+model AuditEvent {
+  id         String   @id @default(cuid())
+  actorId    String
+  projectId  String?
+  teamId     String?
+  taskId     String?
+  action     String
+  targetType String
+  targetId   String
+  metadata   Json?
+  actor      User     @relation("AuditActor", fields: [actorId], references: [id])
+  project    Project? @relation(fields: [projectId], references: [id])
+  team       Team?    @relation(fields: [teamId], references: [id])
+  task       Task?    @relation(fields: [taskId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@index([projectId, createdAt])
+  @@index([teamId, createdAt])
+  @@index([taskId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model Memory {
+  id         String      @id @default(cuid())
+  authorId   String
+  projectId  String?
+  teamId     String?
+  taskId     String?
+  scope      MemoryScope
+  content    String
+  author     User        @relation("MemoryAuthor", fields: [authorId], references: [id])
+  project    Project?    @relation(fields: [projectId], references: [id])
+  team       Team?       @relation(fields: [teamId], references: [id])
+  task       Task?       @relation(fields: [taskId], references: [id])
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  archivedAt DateTime?
+
+  @@index([scope, projectId, createdAt])
+  @@index([teamId, createdAt])
+  @@index([taskId, createdAt])
+}
