@@ -19,7 +19,7 @@ type UserWithMemberships = {
   email: string;
   displayName: string;
   role: Role;
-  passwordHash: string;
+  passwordHash?: string | null;
   archivedAt: Date | null;
   teamMemberships: Array<{ teamId: string; team: { projectId: string } }>;
 };
@@ -40,9 +40,25 @@ export async function authenticateWithPassword(email: string, password: string):
   if (!normalizedEmail || !password) return null;
   const user = await prisma.user.findUnique({
     where: { email: normalizedEmail },
-    include: { teamMemberships: { where: { archivedAt: null }, include: { team: { select: { projectId: true } } } } },
-  }) as UserWithMemberships | null;
-  if (!user || user.archivedAt || !(await compare(password, user.passwordHash))) return null;
+    select: {
+      id: true,
+      email: true,
+      displayName: true,
+      role: true,
+      passwordHash: true,
+      archivedAt: true,
+      teamMemberships: {
+        where: { archivedAt: null },
+        select: { teamId: true, team: { select: { projectId: true } } },
+      },
+    },
+  });
+  if (!user || user.archivedAt || typeof user.passwordHash !== "string" || user.passwordHash.length === 0) return null;
+  try {
+    if (!(await compare(password, user.passwordHash))) return null;
+  } catch {
+    return null;
+  }
   return toSessionUser(user);
 }
 
@@ -53,8 +69,18 @@ export async function requireUser(request: Request): Promise<SessionUser> {
   const payload = await verifySessionToken(token);
   const user = await prisma.user.findUnique({
     where: { id: payload.sub },
-    include: { teamMemberships: { where: { archivedAt: null }, include: { team: { select: { projectId: true } } } } },
-  }) as UserWithMemberships | null;
+    select: {
+      id: true,
+      email: true,
+      displayName: true,
+      role: true,
+      archivedAt: true,
+      teamMemberships: {
+        where: { archivedAt: null },
+        select: { teamId: true, team: { select: { projectId: true } } },
+      },
+    },
+  });
   if (!user || user.archivedAt) throw new Error("Unauthorized session");
   return toSessionUser(user);
 }

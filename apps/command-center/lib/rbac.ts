@@ -6,6 +6,7 @@ export type ProposalLike = { scope: "ORGANIZATION" | "PROJECT" | "TEAM"; project
 
 function inScope(actor: SessionUser, scope: PermissionScope): boolean {
   if (scope.organization) return actor.role === "CEO";
+  if (!scope.projectId && !scope.teamId) return false;
   if (scope.projectId && !actor.projectIds.includes(scope.projectId)) return false;
   if (scope.teamId && !actor.teamIds.includes(scope.teamId)) return false;
   return true;
@@ -22,5 +23,7 @@ export function assertPermission(actor: SessionUser, permission: Permission, sco
 export function canApproveProposal(actor: SessionUser, proposal: ProposalLike): boolean {
   if (actor.role === "CEO") return true;
   if (actor.role !== "MANAGER" || proposal.scope === "ORGANIZATION") return false;
+  if (proposal.scope === "PROJECT" && !proposal.projectId) return false;
+  if (proposal.scope === "TEAM" && !proposal.teamId) return false;
   return inScope(actor, { projectId: proposal.projectId, teamId: proposal.teamId });
 }

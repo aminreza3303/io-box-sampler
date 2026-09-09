@@ -35,4 +35,12 @@ describe("role and scope permissions", () => {
     expect(() => assertPermission(member, "approve_proposal", organizationScope)).toThrow("not allowed");
     expect(canApproveProposal(member, { scope: "ORGANIZATION" })).toBe(false);
   });
+
+  it("fails closed for empty and malformed non-CEO scopes", () => {
+    const manager = actor("MANAGER", ["team-1"], ["project-1"]);
+    expect(() => assertPermission(manager, "mutate_project", {})).toThrow("not allowed");
+    expect(() => assertPermission(manager, "approve_proposal", {})).toThrow("not allowed");
+    expect(canApproveProposal(manager, { scope: "PROJECT" })).toBe(false);
+    expect(canApproveProposal(manager, { scope: "TEAM" })).toBe(false);
+  });
 });

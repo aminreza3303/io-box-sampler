@@ -1,5 +1,6 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { hash } from "bcryptjs";
 import { config } from "dotenv";
 import { fileURLToPath } from "node:url";
 
@@ -12,6 +13,13 @@ if (!connectionString) {
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 const phaseTypes = ["PRODUCT", "DESIGN", "DEVELOPMENT", "DELIVERY"] as const;
+
+// These credentials are for local development/demo use only. Never reuse them outside a local database.
+const localDemoPasswords = {
+  ceo: "ceo-demo-password",
+  manager: "manager-demo-password",
+  member: "member-demo-password",
+} as const;
 
 async function upsertTaskWithPhases(input: {
   projectId: string;
@@ -71,20 +79,26 @@ async function upsertTaskWithPhases(input: {
 }
 
 async function main() {
+  const passwordHashes = {
+    ceo: await hash(localDemoPasswords.ceo, 12),
+    manager: await hash(localDemoPasswords.manager, 12),
+    member: await hash(localDemoPasswords.member, 12),
+  };
+
   const ceo = await prisma.user.upsert({
     where: { email: "ceo@command-center.local" },
-    create: { email: "ceo@command-center.local", displayName: "مدیرعامل", role: "CEO" },
-    update: { displayName: "مدیرعامل", role: "CEO", archivedAt: null },
+    create: { email: "ceo@command-center.local", displayName: "مدیرعامل", passwordHash: passwordHashes.ceo, role: "CEO" },
+    update: { displayName: "مدیرعامل", passwordHash: passwordHashes.ceo, role: "CEO", archivedAt: null },
   });
   const manager = await prisma.user.upsert({
     where: { email: "manager@command-center.local" },
-    create: { email: "manager@command-center.local", displayName: "مدیر شاطی", role: "MANAGER" },
-    update: { displayName: "مدیر شاطی", role: "MANAGER", archivedAt: null },
+    create: { email: "manager@command-center.local", displayName: "مدیر شاطی", passwordHash: passwordHashes.manager, role: "MANAGER" },
+    update: { displayName: "مدیر شاطی", passwordHash: passwordHashes.manager, role: "MANAGER", archivedAt: null },
   });
   const member = await prisma.user.upsert({
     where: { email: "member@command-center.local" },
-    create: { email: "member@command-center.local", displayName: "عضو نیوکاش", role: "MEMBER" },
-    update: { displayName: "عضو نیوکاش", role: "MEMBER", archivedAt: null },
+    create: { email: "member@command-center.local", displayName: "عضو نیوکاش", passwordHash: passwordHashes.member, role: "MEMBER" },
+    update: { displayName: "عضو نیوکاش", passwordHash: passwordHashes.member, role: "MEMBER", archivedAt: null },
   });
 
   const newcash = await prisma.project.upsert({
