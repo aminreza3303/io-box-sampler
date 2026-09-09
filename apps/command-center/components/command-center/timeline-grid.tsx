@@ -137,14 +137,14 @@ function statusTone(status: string | undefined): string {
 
 export function TimelineGrid({ tasks, range, zoom, onSelectTask }: TimelineGridProps) {
   const columns = buildTimelineColumns(range, zoom);
-  return <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" aria-label="تایم‌لاین پروژه">
+  return <div className="overflow-auto rounded-2xl border border-slate-200 bg-white shadow-sm" aria-label="تایم‌لاین پروژه">
     <div className="flex min-w-[780px] border-b border-slate-200 bg-slate-50 text-xs text-slate-500">
       <div className="sticky right-0 z-10 w-72 shrink-0 border-l border-slate-200 bg-slate-50 px-4 py-3">عنوان فعالیت</div>
       <div className="relative flex min-w-0 flex-1" dir="ltr">
         {columns.map((column) => <div key={column.key} className="border-l border-slate-200 px-2 py-3 text-center" style={{ width: `${column.width}%` }} dir="rtl">{column.label}</div>)}
       </div>
     </div>
-    <div className="max-h-[570px] overflow-auto">
+    <div className="max-h-[570px] overflow-y-auto">
       {tasks.length === 0 ? <div className="p-12 text-center text-sm text-slate-500">فعالیتی با این فیلتر پیدا نشد.</div> : tasks.map((task) => {
         const phases = Array.isArray(task.phases) ? task.phases as Array<Record<string, unknown>> : [];
         const taskStart = (task.createdAt as string | undefined) ?? range.start;

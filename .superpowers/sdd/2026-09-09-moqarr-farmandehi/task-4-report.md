@@ -15,3 +15,4 @@
 - Existing legacy Vite files remain unstaged and untouched.
 - Review fix round: persisted task phases are retained in normalized rows; project/team/assignee/zoom filters are exposed; API auth/validation statuses are separated; Sheet supports initial focus and Escape close.
 - Final validation: timeline tests 5/5, TypeScript PASS, production build PASS.
+- Final review fixes: assignee changes trigger snapshot reload, the timeline header shares the horizontal scroll container with rows, and the Sheet traps Tab focus, closes on Escape, and restores focus on close.

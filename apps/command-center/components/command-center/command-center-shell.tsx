@@ -15,7 +15,7 @@ export function CommandCenterShell() {
   const [selected, setSelected] = useState<Record<string, any> | null>(null);
   const [error, setError] = useState("");
   const load = async () => { const query = new URLSearchParams(Object.entries(filters).filter(([key, value]) => key !== "q" && Boolean(value))); const response = await fetch(`/api/snapshot?${query}`); if (!response.ok) { setError("دریافت اطلاعات فرماندهی ناموفق بود."); return; } setSnapshot(await response.json()); setError(""); };
-  useEffect(() => { void load(); }, [filters.projectId, filters.teamId, filters.phase, filters.status]);
+  useEffect(() => { void load(); }, [filters.projectId, filters.teamId, filters.assigneeId, filters.phase, filters.status, filters.zoom]);
   const tasks = useMemo(() => snapshot.tasks.filter((task) => !filters.q || String(task.title).toLowerCase().includes(filters.q.toLowerCase())), [snapshot.tasks, filters.q]);
   const onFilter = (key: string, value: string) => setFilters((current) => { const next = { ...current }; if (value) next[key] = value; else delete next[key]; return next; });
   const range = { start: "2026-09-01", end: "2026-10-01" };
