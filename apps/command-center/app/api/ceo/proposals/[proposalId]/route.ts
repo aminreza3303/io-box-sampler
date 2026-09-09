@@ -1,0 +1,5 @@
+import { NextResponse } from "next/server";
+import { requireUser } from "../../../../../lib/auth";
+import { approveProposal, rejectProposal } from "../../../../../server/domain/proposal-service";
+
+export async function PATCH(request: Request, { params }: { params: Promise<{ proposalId: string }> }) { try { const user = await requireUser(request); const body = await request.json() as { decision?: "approve" | "reject"; reason?: string }; const id = (await params).proposalId; if (body.decision === "approve") return NextResponse.json(await approveProposal(id, { userId: user.userId, role: user.role, teamIds: user.teamIds, projectIds: user.projectIds })); if (body.decision === "reject") return NextResponse.json(await rejectProposal(id, { userId: user.userId, role: user.role, teamIds: user.teamIds, projectIds: user.projectIds }, body.reason ?? "بدون توضیح")); return NextResponse.json({ error: "تصمیم نامعتبر است" }, { status: 400 }); } catch (error) { const message = error instanceof Error ? error.message : "خطا"; return NextResponse.json({ error: message }, { status: /Unauthorized|Invalid/.test(message) ? 401 : 400 }); } }
