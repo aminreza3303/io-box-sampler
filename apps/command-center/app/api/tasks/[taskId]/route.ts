@@ -9,6 +9,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ta
     const result = await updateTaskPhase((await params).taskId, body.phaseType ?? "", body.patch ?? {}, { userId: user.userId, role: user.role, teamIds: user.teamIds });
     return NextResponse.json(result);
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "خطا در ویرایش فاز" }, { status: 400 });
+    const message = error instanceof Error ? error.message : "خطا در ویرایش فاز";
+    return NextResponse.json({ error: message }, { status: /Unauthorized|Invalid or expired session/.test(message) ? 401 : 400 });
   }
 }

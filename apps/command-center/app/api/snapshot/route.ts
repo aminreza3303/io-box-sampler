@@ -16,6 +16,7 @@ export async function GET(request: Request) {
     } as Parameters<typeof listCommandCenterSnapshot>[0], { userId: user.userId, role: user.role, teamIds: user.teamIds });
     return NextResponse.json(snapshot);
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "خطا در دریافت snapshot" }, { status: 401 });
+    const message = error instanceof Error ? error.message : "خطا در دریافت snapshot";
+    return NextResponse.json({ error: message }, { status: /Unauthorized|Invalid or expired session/.test(message) ? 401 : 400 });
   }
 }

@@ -98,6 +98,7 @@ export async function listCommandCenterSnapshot(
   const teams = projects.flatMap((project) => project.teams);
   const normalizedTasks = tasks.map(({ phases: taskPhases, assignee, ...task }) => ({
     ...task,
+    phases: taskPhases,
     assignee: assignee ? { id: assignee.id, displayName: assignee.displayName, email: assignee.email } : null,
   }));
   const phases = tasks.flatMap((task) => task.phases);

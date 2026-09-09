@@ -13,3 +13,5 @@
 - `npx tsc --noEmit`: PASS.
 - `npm run build`: PASS — command-center page, snapshot/tasks APIs and middleware compiled.
 - Existing legacy Vite files remain unstaged and untouched.
+- Review fix round: persisted task phases are retained in normalized rows; project/team/assignee/zoom filters are exposed; API auth/validation statuses are separated; Sheet supports initial focus and Escape close.
+- Final validation: timeline tests 5/5, TypeScript PASS, production build PASS.
