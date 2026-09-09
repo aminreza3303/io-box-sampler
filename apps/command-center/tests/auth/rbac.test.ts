@@ -51,6 +51,7 @@ describe("role and scope permissions", () => {
     const ceo = actor("CEO", [], []);
     expect(canApproveProposal(ceo, { scope: "PROJECT" })).toBe(false);
     expect(canApproveProposal(ceo, { scope: "PROJECT", projectId: "project-1", teamId: "team-1" })).toBe(false);
+    expect(canApproveProposal(ceo, { scope: "UNKNOWN" as never })).toBe(false);
     expect(canApproveProposal(ceo, { scope: "ORGANIZATION" })).toBe(true);
   });
 });

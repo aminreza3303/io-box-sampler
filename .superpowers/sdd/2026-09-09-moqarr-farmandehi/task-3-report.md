@@ -25,6 +25,7 @@
 - Auth regression tests: PASS — 12 tests.
 - Final RBAC hardening: proposal and permission scopes are now mutually exclusive and shape-validated before CEO or manager approval; regression suite: PASS — 13 auth tests.
 - Final `npm run build`: PASS — login/auth routes and middleware compiled.
+- Runtime unknown proposal scopes now reject explicitly, and missing/empty password hashes have regression coverage; final auth suite: PASS — 14 tests.
 
 ## Scope
 

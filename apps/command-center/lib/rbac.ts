@@ -27,6 +27,7 @@ export function assertPermission(actor: SessionUser, permission: Permission, sco
 }
 
 export function canApproveProposal(actor: SessionUser, proposal: ProposalLike): boolean {
+  if (proposal.scope !== "ORGANIZATION" && proposal.scope !== "PROJECT" && proposal.scope !== "TEAM") return false;
   const shapeMatches = proposal.scope === "ORGANIZATION"
     ? !proposal.projectId && !proposal.teamId
     : proposal.scope === "PROJECT"

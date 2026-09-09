@@ -62,6 +62,11 @@ describe("local authentication", () => {
     await expect(authenticateWithPassword(userRecord.email, "correct horse battery staple")).resolves.toBeNull();
   });
 
+  it("rejects a user without a usable password hash", async () => {
+    prisma.user.findUnique.mockResolvedValue({ ...userRecord, passwordHash: null });
+    await expect(authenticateWithPassword(userRecord.email, "correct horse battery staple")).resolves.toBeNull();
+  });
+
   it("rejects malformed, expired, and tampered session tokens", async () => {
     const token = await createSessionToken("user-1", Date.now() - 10_000);
     await expect(verifySessionToken(token)).rejects.toThrow("session");
