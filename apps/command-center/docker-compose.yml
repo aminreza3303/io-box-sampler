@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: command_center
+      POSTGRES_PASSWORD: change-me-in-server-env
+      POSTGRES_DB: command_center
+    volumes:
+      - command-center-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U command_center -d command_center"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://command_center:change-me-in-server-env@postgres:5432/command_center
+      AUTH_SESSION_SECRET: replace-with-a-long-random-secret
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+volumes:
+  command-center-pg:

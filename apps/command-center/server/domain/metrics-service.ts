@@ -1,0 +1,9 @@
+import { prisma } from "../../lib/db";
+
+export type ProjectMetrics = { overdueCount: number; phaseCompletion: number; cycleTimeDays: number; teamLoad: Array<{ teamId: string; activeTasks: number }>; riskTotals: { total: number; urgent: number; blocked: number } };
+export async function getProjectMetrics(filters: { projectId?: string; teamId?: string }, actor: { role: string; projectIds?: string[]; teamIds?: string[] }): Promise<ProjectMetrics> {
+  const projectIds = actor.role === "CEO" ? (filters.projectId ? [filters.projectId] : undefined) : (filters.projectId && actor.projectIds?.includes(filters.projectId) ? [filters.projectId] : actor.projectIds ?? []);
+  const tasks = await prisma.task.findMany({ where: { archivedAt: null, ...(projectIds ? { projectId: { in: projectIds } } : {}), ...(filters.teamId ? { teamId: filters.teamId } : {}), ...(actor.role === "CEO" ? {} : { teamId: { in: actor.teamIds ?? [] } }) }, include: { phases: true } });
+  const risks = await prisma.risk.findMany({ where: { archivedAt: null, ...(projectIds ? { projectId: { in: projectIds } } : {}), ...(filters.teamId ? { teamId: filters.teamId } : {}) } });
+  const now = Date.now(); const overdueCount = tasks.filter((task) => task.dueDate && task.dueDate.getTime() < now && task.status !== "DONE").length; const phases = tasks.flatMap((task) => task.phases); const phaseCompletion = phases.length ? Math.round((phases.filter((phase) => phase.status === "COMPLETE").length / phases.length) * 100) : 0; const teamLoad = [...new Set(tasks.map((task) => task.teamId))].map((teamId) => ({ teamId, activeTasks: tasks.filter((task) => task.teamId === teamId && task.status !== "DONE" && task.status !== "CANCELLED").length })); return { overdueCount, phaseCompletion, cycleTimeDays: 0, teamLoad, riskTotals: { total: risks.length, urgent: risks.filter((risk) => risk.priority === "URGENT").length, blocked: risks.filter((risk) => risk.status === "BLOCKED").length } };
+}
