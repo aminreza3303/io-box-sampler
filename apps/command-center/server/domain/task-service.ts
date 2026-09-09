@@ -41,7 +41,7 @@ export async function createTask(rawInput: CreateTaskInput, actor: DomainActor) 
       OR: [{ teamId: null }, { teamId: input.teamId }],
     };
     if (input.sprintId && !await transaction.sprint.findFirst({
-      where: { id: input.sprintId, ...artifactScope }, select: { id: true },
+      where: { id: input.sprintId, status: "ACTIVE", ...artifactScope }, select: { id: true },
     })) throw new Error("sprint must be active and belong to the same project/team");
     if (input.backlogItemId && !await transaction.backlogItem.findFirst({
       where: { id: input.backlogItemId, ...artifactScope }, select: { id: true },

@@ -63,6 +63,18 @@ describe("task domain service", () => {
     ).rejects.toThrow();
   });
 
+  it("requires an active sprint when creating a task in a sprint", async () => {
+    prisma.sprint.findFirst.mockResolvedValue(null);
+
+    await expect(
+      createTask({ title: "Task", projectId: "project-1", teamId: "team-1", sprintId: "sprint-1" }, ceoActor),
+    ).rejects.toThrow("sprint must be active");
+    expect(prisma.sprint.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ id: "sprint-1", status: "ACTIVE" }),
+    }));
+    expect(prisma.task.create).not.toHaveBeenCalled();
+  });
+
   it("prevents a member from mutating another team's task", async () => {
     prisma.task.findFirst.mockResolvedValue(null);
 

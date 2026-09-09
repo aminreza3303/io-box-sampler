@@ -2,7 +2,7 @@
 
 ## Status
 
-DONE_WITH_CONCERNS — the command-center domain, schema, generated migration, client configuration, seed program, and focused tests are implemented and ready for the scoped Task 2 commit. The local Prisma development database is running and reports its migration as applied and up to date. Seed completion remains unverified; the Windows seed-command quoting defect found during finalization was corrected, and no further seed/database command was run.
+COMPLETE — the focused review-fix round is implemented and verified. Changes remain isolated to `apps/command-center` plus this report; the legacy Vite files and unrelated artifacts were not touched.
 
 ## Delivered Work
 
@@ -11,33 +11,31 @@ DONE_WITH_CONCERNS — the command-center domain, schema, generated migration, c
 - Modelled User, Project, Team, TeamMember, Task, TaskPhase, TaskDependency, Goal, Risk, Issue, Decision, Sprint, BacklogItem, AuditEvent, and Memory, with the required enums, relation/index coverage, soft archives, and unique `(taskId, phaseType)` constraint.
 - Added an idempotent seed program for exactly three projects (`نیوکاش`, `شاطی`, `تراز`), exactly two teams (`نیوکاش`, `شاطی`), CEO/manager/member users, a product backlog, one active sprint, standard artifacts, and tasks seeded across all four canonical phases.
 - Added a Prisma singleton, typed replaceable `DomainActor` boundary, Zod input validation, permission-aware project/task services, transactional task creation, dependency protection, phase updating, and command-center snapshots.
-- Added TDD coverage for four phase creation, invalid phase rejection, cross-team member denial, self-dependency denial, and CEO-only project creation/auditing.
+- Moved `dotenv` from `devDependencies` to runtime `dependencies`; the existing runtime imports in `lib/db.ts` and `prisma/seed.ts` are now packaged correctly.
+- Enforced the intended ACTIVE-sprint contract in `createTask`: a supplied `sprintId` must resolve to an unarchived sprint with `status: "ACTIVE"` in the same project/team scope.
+- Added explicit MANAGER denial coverage to the CEO-only project service test and ACTIVE-sprint coverage to the task service test.
+- Diagnosed the seed failure: raw `pg` and a single PrismaPg query succeeded, but the seed's concurrent four-way `TeamMember.upsert` caused the local Prisma dev server to close a connection (`P1017`, `ConnectionClosed`). Converted those idempotent membership upserts to sequential operations.
 
 ## Validation
 
 | Check | Result |
 | --- | --- |
-| `prisma validate` | PASS |
-| Focused finalization validation (`npm --prefix apps/command-center run test -- tests/domain/project-service.test.ts tests/domain/task-service.test.ts`) | PASS; 16 tests |
-| Focused finalization validation (`npm exec prisma validate` from `apps/command-center`) | PASS |
-| `prisma generate` | PASS |
-| Local `prisma dev` (`moqarr-farmandehi`) | RUNNING |
-| Initial `prisma migrate dev --name init_command_center` | PASS; migration created and applied |
-| `prisma migrate status` against direct local TCP database | PASS; schema up to date |
-| `tsc --noEmit` | PASS |
-| Command-center `next build` | PASS |
+| `npm run test -- tests/domain/project-service.test.ts tests/domain/task-service.test.ts` | PASS; 18 tests |
+| `npx tsc --noEmit` | PASS |
+| `npm exec prisma validate` | PASS |
+| `npm exec prisma generate` | PASS; Prisma Client 7.10.0 generated |
+| `npm exec prisma migrate status` | PASS; schema up to date |
+| `npm exec prisma db seed` (bounded to 30 seconds, existing DB, no reset) | PASS; `Command center seed completed.` |
 
-## Concern: Local Seed Transport
-
-Earlier `prisma db seed` attempts reached the named local server but `@prisma/adapter-pg`/`pg` received `Connection terminated unexpectedly` from its returned direct TCP endpoint (`localhost:51214`). During finalization, an absolute quoted Windows seed path also failed before connection because the quotes were passed literally to `tsx`; the config now uses the package-relative `tsx prisma/seed.ts` command. The seed is idempotent, no destructive recovery was attempted, and migration status remains up to date. Per the finalization instruction, the corrected seed command was not rerun.
+The seed command was run from `apps/command-center`, where `prisma.config.ts` resolves `prisma/seed.ts`. The database was not reset or dropped. The seed remains idempotent and completed after the sequential-upsert mitigation.
 
 ## Self-Review
 
 - Kept the legacy Vite files and all listed user changes unstaged and unmodified.
-- Removed generated `tsconfig.tsbuildinfo`; `.env.local` remains ignored and untracked.
+- `.env.local` remains ignored and untracked; generated build artifacts and unrelated user files remain untouched.
 - Checked scoped diffs for whitespace errors and unresolved placeholders; none found.
-- The legacy app’s regression run was not repeated because the task was finalizing against a live local database; command-center build and focused tests passed.
+- The legacy app's regression run was not repeated because this fix round was scoped to the isolated command-center app.
 
 ## Commit
 
-Pending: `feat: add command center project domain`
+Pending: `fix: close task 2 review findings`

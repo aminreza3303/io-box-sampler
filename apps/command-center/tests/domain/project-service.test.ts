@@ -45,6 +45,12 @@ describe("createProject", () => {
       createProject({ name: "نیوکاش", code: "newcash" }, { userId: "member-1", role: "MEMBER", teamIds: ["team-1"] }),
     ).rejects.toThrow("not allowed");
   });
+
+  it("rejects project creation by a manager", async () => {
+    await expect(
+      createProject({ name: "نیوکاش", code: "newcash" }, { userId: "manager-1", role: "MANAGER", teamIds: ["team-1"] }),
+    ).rejects.toThrow("not allowed");
+  });
 });
 
 describe("command center snapshot", () => {

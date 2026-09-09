@@ -114,28 +114,26 @@ async function main() {
     update: { name: "شاطی", projectId: shati.id, archivedAt: null },
   });
 
-  await Promise.all([
-    prisma.teamMember.upsert({
-      where: { teamId_userId: { teamId: newcashTeam.id, userId: ceo.id } },
-      create: { teamId: newcashTeam.id, userId: ceo.id, role: "CEO" },
-      update: { role: "CEO", archivedAt: null },
-    }),
-    prisma.teamMember.upsert({
-      where: { teamId_userId: { teamId: newcashTeam.id, userId: member.id } },
-      create: { teamId: newcashTeam.id, userId: member.id, role: "MEMBER" },
-      update: { role: "MEMBER", archivedAt: null },
-    }),
-    prisma.teamMember.upsert({
-      where: { teamId_userId: { teamId: shatiTeam.id, userId: ceo.id } },
-      create: { teamId: shatiTeam.id, userId: ceo.id, role: "CEO" },
-      update: { role: "CEO", archivedAt: null },
-    }),
-    prisma.teamMember.upsert({
-      where: { teamId_userId: { teamId: shatiTeam.id, userId: manager.id } },
-      create: { teamId: shatiTeam.id, userId: manager.id, role: "MANAGER" },
-      update: { role: "MANAGER", archivedAt: null },
-    }),
-  ]);
+  await prisma.teamMember.upsert({
+    where: { teamId_userId: { teamId: newcashTeam.id, userId: ceo.id } },
+    create: { teamId: newcashTeam.id, userId: ceo.id, role: "CEO" },
+    update: { role: "CEO", archivedAt: null },
+  });
+  await prisma.teamMember.upsert({
+    where: { teamId_userId: { teamId: newcashTeam.id, userId: member.id } },
+    create: { teamId: newcashTeam.id, userId: member.id, role: "MEMBER" },
+    update: { role: "MEMBER", archivedAt: null },
+  });
+  await prisma.teamMember.upsert({
+    where: { teamId_userId: { teamId: shatiTeam.id, userId: ceo.id } },
+    create: { teamId: shatiTeam.id, userId: ceo.id, role: "CEO" },
+    update: { role: "CEO", archivedAt: null },
+  });
+  await prisma.teamMember.upsert({
+    where: { teamId_userId: { teamId: shatiTeam.id, userId: manager.id } },
+    create: { teamId: shatiTeam.id, userId: manager.id, role: "MANAGER" },
+    update: { role: "MANAGER", archivedAt: null },
+  });
 
   const backlog = await prisma.backlogItem.upsert({
     where: { projectId_title: { projectId: newcash.id, title: "مرکز فرماندهی" } },
