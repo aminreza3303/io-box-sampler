@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     const user = await requireUser(request);
     const runs = await prisma.agentRun.findMany({
       where: user.role === "CEO" ? {} : { actorId: user.userId },
-      select: { id: true, runtime: true, prompt: true, status: true, resultKind: true, output: true, error: true, context: true, createdAt: true, completedAt: true, actor: { select: { displayName: true } }, messages: { select: { id: true, role: true, content: true, createdAt: true }, orderBy: { createdAt: "asc" } } },
+      select: { id: true, runtime: true, prompt: true, status: true, resultKind: true, output: true, error: true, context: true, createdAt: true, completedAt: true, actor: { select: { displayName: true } }, agentSession: { select: { sessionName: true, project: { select: { name: true, code: true } } } }, messages: { select: { id: true, role: true, content: true, createdAt: true }, orderBy: { createdAt: "asc" } } },
       orderBy: { createdAt: "desc" },
       take: 40,
     });

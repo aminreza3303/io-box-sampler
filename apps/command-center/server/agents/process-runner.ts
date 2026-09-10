@@ -5,7 +5,14 @@ import path from "node:path";
 export type ProcessResult = { code: number | null; stdout: string; stderr: string; timedOut: boolean };
 export type ProcessRunner = { run(command: string, args: string[], options: { runId: string; cwd: string; timeoutMs: number; maxOutputBytes?: number }): Promise<ProcessResult>; stop(runId: string): Promise<void> };
 
-function isAllowedCwd(cwd: string) { const root = path.resolve(process.cwd()); const resolved = path.resolve(cwd); return resolved === root || resolved.startsWith(`${root}${path.sep}`); }
+function isAllowedCwd(cwd: string) {
+  const resolved = path.resolve(cwd);
+  const appRoot = path.resolve(process.cwd());
+  const repositoryRoot = path.resolve(process.cwd(), "../..");
+  const configuredRoot = process.env.COMMAND_CENTER_PROJECT_ROOT?.trim();
+  const allowedRoots = configuredRoot ? [path.resolve(configuredRoot)] : [repositoryRoot, path.dirname(repositoryRoot)];
+  return resolved === appRoot || allowedRoots.some((root) => resolved === root || resolved.startsWith(`${root}${path.sep}`));
+}
 
 export class SafeProcessRunner implements ProcessRunner {
   private readonly children = new Map<string, ChildProcess>();

@@ -33,4 +33,8 @@ docker compose up --build
 - `/audit` و `/api/metrics` — ردپا و شاخص‌ها
 - مستندات پشتیبان نقشه در `docs/obsidian/newcash-vault/` نگه‌داری می‌شوند؛ تجربهٔ اصلی دانش محصول در `/domains` وبی است و برای استفاده نیاز به بازکردن Obsidian ندارد.
 
+در `/ai` و `/scenarios` می‌توان یک پروژه را به Hermes وصل کرد. پیام‌های همان کاربر و پروژه در یک session پایدار و در workspace همان پروژه اجرا می‌شوند. Hermes فقط proposal می‌سازد؛ task بعد از تأیید مدیرعامل در `/ceo/proposals` ایجاد می‌شود. چت بدون پروژه one-shot باقی می‌ماند.
+
+برای اجرای local، `hermes` باید در PATH باشد یا `HERMES_EXECUTABLE` را در `.env.local` تنظیم و سرویس را restart کنید. به‌صورت پیش‌فرض adapter از `openrouter` با مدل `openai/gpt-4o-mini` استفاده می‌کند؛ این دو مقدار با `HERMES_PROVIDER` و `HERMES_MODEL` قابل تغییرند. مسیر `COMMAND_CENTER_PROJECT_ROOT` ریشهٔ مجاز workspaceهاست و override هر پروژه با `COMMAND_CENTER_PROJECT_<CODE>_PATH` تنظیم می‌شود. در Docker، workspaceها باید داخل volume mount شده باشند.
+
 در `/scenarios` نرخ نفر-روز، ظرفیت هفتگی تیم و بافر ریسک قابل تنظیم است. اگر نرخ نفر-روز وارد نشود، سیستم هزینه را عمداً محاسبه نمی‌کند و فقط زمان و حجم تغییر را نمایش می‌دهد. برآوردها به‌عنوان تحلیل ثبت می‌شوند و هیچ تغییر مالی یا عملیاتی خودکاری ایجاد نمی‌کنند.

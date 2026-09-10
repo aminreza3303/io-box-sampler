@@ -17,6 +17,12 @@ services:
     environment:
       DATABASE_URL: postgresql://command_center:change-me-in-server-env@postgres:5432/command_center
       AUTH_SESSION_SECRET: replace-with-a-long-random-secret
+      HERMES_EXECUTABLE: ${HERMES_EXECUTABLE:-hermes}
+      OMP_EXECUTABLE: ${OMP_EXECUTABLE:-}
+      COMMAND_CENTER_PROJECT_ROOT: ${COMMAND_CENTER_PROJECT_ROOT:-/workspace}
+      COMMAND_CENTER_PROJECT_NEWCASH_PATH: ${COMMAND_CENTER_PROJECT_NEWCASH_PATH:-/workspace}
+      COMMAND_CENTER_PROJECT_SHATI_PATH: ${COMMAND_CENTER_PROJECT_SHATI_PATH:-/workspace/shati}
+      COMMAND_CENTER_PROJECT_TARAZ_PATH: ${COMMAND_CENTER_PROJECT_TARAZ_PATH:-/workspace/taraz}
     ports:
       - "3000:3000"
     depends_on:

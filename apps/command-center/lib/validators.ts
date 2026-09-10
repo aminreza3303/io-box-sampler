@@ -49,7 +49,7 @@ export const agentProposalSchema = z.object({
   summary: z.string().trim().max(4_000).optional(),
   scope: z.literal("PROJECT"),
   projectId: z.string().trim().min(1),
-  teamId: z.string().trim().min(1).optional(),
+  teamId: z.string().trim().min(1),
   task: agentTaskProposalSchema,
 });
 

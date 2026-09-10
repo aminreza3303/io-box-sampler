@@ -11,7 +11,7 @@ export const agentRoster = [
 ];
 
 export function createAgentAdapters(overrides?: Partial<Record<"hermes" | "omp", AgentRuntimeAdapter>>) { return { hermes: overrides?.hermes ?? new HermesAdapter(), omp: overrides?.omp ?? new OmpAdapter() }; }
-export async function dispatchToMother(prompt: string, cwd = process.cwd(), adapters = createAgentAdapters()): Promise<AgentResult> {
-  const request: AgentRequest = { runId: randomUUID(), role: "orchestrator", prompt, cwd, timeoutMs: 120_000 };
+export async function dispatchToMother(prompt: string, cwd = process.cwd(), adapters = createAgentAdapters(), options: { sessionName?: string } = {}): Promise<AgentResult> {
+  const request: AgentRequest = { runId: randomUUID(), role: "orchestrator", prompt, cwd, timeoutMs: 120_000, sessionName: options.sessionName };
   return adapters.hermes.run(request);
 }

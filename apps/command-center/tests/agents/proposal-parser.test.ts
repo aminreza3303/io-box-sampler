@@ -30,4 +30,9 @@ describe("Hermes proposal parser", () => {
     expect(parseAgentProposal(`<COMMAND_CENTER_PROPOSAL>${JSON.stringify({ ...validProposal, scope: "ORGANIZATION" })}</COMMAND_CENTER_PROPOSAL>`)).toBeNull();
     expect(parseAgentProposal(`<COMMAND_CENTER_PROPOSAL>${JSON.stringify({ ...validProposal, task: { ...validProposal.task, title: "x".repeat(241) } })}</COMMAND_CENTER_PROPOSAL>`)).toBeNull();
   });
+
+  it("normalizes the lowercase priority commonly returned by Hermes", () => {
+    const result = parseAgentProposal(`<COMMAND_CENTER_PROPOSAL>${JSON.stringify({ ...validProposal, task: { ...validProposal.task, priority: "normal" } })}</COMMAND_CENTER_PROPOSAL>`);
+    expect(result?.task.priority).toBe("MEDIUM");
+  });
 });

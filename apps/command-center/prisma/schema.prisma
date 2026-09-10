@@ -97,6 +97,7 @@ model User {
   createdProposals PlanProposal[]    @relation("ProposalCreator")
   reviewedProposals PlanProposal[]   @relation("ProposalReviewer")
   agentRuns        AgentRun[]        @relation("AgentRunActor")
+  agentSessions    AgentSession[]    @relation("AgentSessionOwner")
   scenarioAnalyses ScenarioAnalysis[] @relation("ScenarioAnalysisCreator")
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
@@ -124,6 +125,7 @@ model Project {
   memories     Memory[]
   scenarios    Scenario[]
   proposals    PlanProposal[]
+  agentSessions AgentSession[]       @relation("ProjectAgentSession")
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   archivedAt   DateTime?
@@ -456,6 +458,7 @@ model PlanProposal {
 model AgentRun {
   id          String         @id @default(cuid())
   actorId     String
+  agentSessionId String?
   runtime     String         @default("hermes")
   prompt      String
   status      AgentRunStatus @default(QUEUED)
@@ -464,6 +467,7 @@ model AgentRun {
   error       String?
   context     Json?
   actor       User           @relation("AgentRunActor", fields: [actorId], references: [id])
+  agentSession AgentSession? @relation(fields: [agentSessionId], references: [id])
   messages    AgentMessage[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -471,6 +475,27 @@ model AgentRun {
 
   @@index([actorId, createdAt])
   @@index([status, createdAt])
+}
+
+model AgentSession {
+  id                String    @id @default(cuid())
+  ownerId           String
+  projectId         String
+  runtime           String    @default("hermes")
+  sessionName       String
+  externalSessionId String?
+  workspaceKey      String
+  workspacePath     String
+  status            String    @default("ACTIVE")
+  lastRunAt         DateTime?
+  owner             User      @relation("AgentSessionOwner", fields: [ownerId], references: [id])
+  project           Project   @relation("ProjectAgentSession", fields: [projectId], references: [id])
+  runs              AgentRun[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([ownerId, projectId, runtime])
+  @@index([projectId, updatedAt])
 }
 
 model AgentMessage {
