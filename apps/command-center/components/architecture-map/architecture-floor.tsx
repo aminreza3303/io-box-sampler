@@ -1,4 +1,5 @@
 import { Grid, Html } from "@react-three/drei";
+import type { BufferGeometry } from "three";
 import type { ArchitectureFloor as ArchitectureFloorModel } from "../../lib/architecture-map";
 
 const floorAccents: Record<string, string> = {
@@ -13,15 +14,16 @@ type ArchitectureFloorProps = {
   floor: ArchitectureFloorModel;
   selected: boolean;
   onSelect: (floorId: string) => void;
+  slabGeometry: BufferGeometry;
 };
 
-export function ArchitectureFloor({ floor, selected, onSelect }: ArchitectureFloorProps) {
+export function ArchitectureFloor({ floor, selected, onSelect, slabGeometry }: ArchitectureFloorProps) {
   const accent = floorAccents[floor.id] ?? "#94a3b8";
 
   return (
     <group position={[0, floor.height, 0]}>
       <mesh receiveShadow position={[0, -0.12, 0]}>
-        <boxGeometry args={[12, 0.22, 9]} />
+        <primitive object={slabGeometry} attach="geometry" />
         <meshStandardMaterial
           color={accent}
           emissive={accent}
@@ -72,7 +74,6 @@ export function ArchitectureFloor({ floor, selected, onSelect }: ArchitectureFlo
           {floor.title}
         </button>
       </Html>
-
     </group>
   );
 }

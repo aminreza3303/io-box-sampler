@@ -3,8 +3,8 @@
 import { OrbitControls } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
-import { Color, Fog, Vector3 } from "three";
-import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
+import type { ComponentRef } from "react";
+import { BoxGeometry, Color, Fog, SphereGeometry, TorusGeometry, Vector3 } from "three";
 import {
   architectureFloors,
   getArchitectureFloor,
@@ -34,7 +34,7 @@ type CameraRigProps = Pick<ArchitectureSceneProps, "cameraPreset" | "resetToken"
 
 function CameraRig({ cameraPreset, resetToken, selectedFloorId }: CameraRigProps) {
   const { camera } = useThree();
-  const controlsRef = useRef<OrbitControlsImpl>(null);
+  const controlsRef = useRef<ComponentRef<typeof OrbitControls>>(null);
   const focusFloorId = cameraPreset === "selected-floor" ? selectedFloorId : undefined;
 
   useEffect(() => {
@@ -71,6 +71,24 @@ function CameraRig({ cameraPreset, resetToken, selectedFloorId }: CameraRigProps
 }
 
 function SceneContents(props: ArchitectureSceneProps) {
+  const geometries = useMemo(
+    () => ({
+      slab: new BoxGeometry(12, 0.22, 9),
+      nodeBody: new BoxGeometry(1.85, 0.86, 1.34),
+      nodeRing: new TorusGeometry(0.7, 0.045, 10, 40),
+      selectedNodeRing: new TorusGeometry(0.7, 0.075, 10, 40),
+      signal: new SphereGeometry(0.12, 12, 12),
+    }),
+    [],
+  );
+
+  useEffect(
+    () => () => {
+      Object.values(geometries).forEach((geometry) => geometry.dispose());
+    },
+    [geometries],
+  );
+
   const visibleFloorIdSet = useMemo(() => new Set(props.visibleFloorIds), [props.visibleFloorIds]);
   const visibleFloors = useMemo(
     () => architectureFloors.filter((floor) => visibleFloorIdSet.has(floor.id)),
@@ -110,6 +128,7 @@ function SceneContents(props: ArchitectureSceneProps) {
           floor={floor}
           selected={floor.id === props.selectedFloorId}
           onSelect={props.onSelectFloor}
+          slabGeometry={geometries.slab}
         />
       ))}
 
@@ -119,6 +138,7 @@ function SceneContents(props: ArchitectureSceneProps) {
           edge={edge}
           active={edge.from === props.selectedId || edge.to === props.selectedId}
           reducedMotion={props.reducedMotion}
+          signalGeometry={geometries.signal}
         />
       ))}
 
@@ -129,6 +149,9 @@ function SceneContents(props: ArchitectureSceneProps) {
           selected={node.id === props.selectedId}
           dimmed={connectedIds.size > 0 && node.id !== props.selectedId && !connectedIds.has(node.id)}
           onSelect={props.onSelectNode}
+          bodyGeometry={geometries.nodeBody}
+          ringGeometry={geometries.nodeRing}
+          selectedRingGeometry={geometries.selectedNodeRing}
         />
       ))}
 

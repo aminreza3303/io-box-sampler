@@ -1,6 +1,7 @@
 import { Html } from "@react-three/drei";
 import { useState } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
+import type { BufferGeometry } from "three";
 import type { DomainGroupId } from "../../lib/domain-map";
 import type { ArchitectureNode as ArchitectureNodeModel } from "../../lib/architecture-map";
 
@@ -17,9 +18,20 @@ type ArchitectureNodeProps = {
   selected: boolean;
   dimmed: boolean;
   onSelect: (id: string) => void;
+  bodyGeometry: BufferGeometry;
+  ringGeometry: BufferGeometry;
+  selectedRingGeometry: BufferGeometry;
 };
 
-export function ArchitectureNode({ node, selected, dimmed, onSelect }: ArchitectureNodeProps) {
+export function ArchitectureNode({
+  node,
+  selected,
+  dimmed,
+  onSelect,
+  bodyGeometry,
+  ringGeometry,
+  selectedRingGeometry,
+}: ArchitectureNodeProps) {
   const [hovered, setHovered] = useState(false);
   const color = groupColors[node.domain.group];
   const opacity = dimmed ? 0.25 : 1;
@@ -42,7 +54,7 @@ export function ArchitectureNode({ node, selected, dimmed, onSelect }: Architect
       onPointerOver={(event) => handlePointer(event, true)}
     >
       <mesh castShadow>
-        <boxGeometry args={[1.85, 0.86, 1.34]} />
+        <primitive object={bodyGeometry} attach="geometry" />
         <meshStandardMaterial
           color={color}
           emissive={color}
@@ -55,7 +67,7 @@ export function ArchitectureNode({ node, selected, dimmed, onSelect }: Architect
       </mesh>
 
       <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -0.46, 0]}>
-        <torusGeometry args={[0.7, selected ? 0.075 : 0.045, 10, 40]} />
+        <primitive object={selected ? selectedRingGeometry : ringGeometry} attach="geometry" />
         <meshBasicMaterial
           color={node.domain.status === "OPEN_DECISION" ? "#fbbf24" : "#4ade80"}
           opacity={dimmed ? 0.22 : selected ? 1 : 0.72}
