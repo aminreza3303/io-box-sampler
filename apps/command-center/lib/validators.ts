@@ -35,6 +35,24 @@ export const createTaskSchema = z.object({
   dependencyTaskIds: z.array(z.string().min(1)).default([]),
 });
 
+export const agentTaskProposalSchema = z.object({
+  title: z.string().trim().min(1).max(240),
+  description: z.string().trim().max(10_000).optional(),
+  projectId: z.string().trim().min(1).optional(),
+  teamId: z.string().trim().min(1).optional(),
+  assigneeId: z.string().trim().min(1).optional(),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).default("MEDIUM"),
+});
+
+export const agentProposalSchema = z.object({
+  title: z.string().trim().min(1).max(240),
+  summary: z.string().trim().max(4_000).optional(),
+  scope: z.literal("PROJECT"),
+  projectId: z.string().trim().min(1),
+  teamId: z.string().trim().min(1).optional(),
+  task: agentTaskProposalSchema,
+});
+
 export const updateTaskPhaseSchema = z.object({
   status: z.enum(["NOT_STARTED", "IN_PROGRESS", "BLOCKED", "COMPLETE"]).optional(),
   notes: z.string().trim().max(10_000).nullable().optional(),
@@ -57,6 +75,7 @@ export const riskIssueSchema = z.object({ kind: z.enum(["RISK", "ISSUE"]), id: z
 
 export type CreateProjectInput = z.input<typeof createProjectSchema>;
 export type CreateTaskInput = z.input<typeof createTaskSchema>;
+export type AgentProposal = z.output<typeof agentProposalSchema>;
 export type UpdateTaskPhasePatch = z.input<typeof updateTaskPhaseSchema>;
 export type CommandCenterSnapshotFilters = z.input<typeof commandCenterSnapshotFiltersSchema>;
 export type CreateTeamInput = z.input<typeof createTeamSchema>;
