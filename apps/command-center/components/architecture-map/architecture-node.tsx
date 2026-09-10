@@ -78,27 +78,38 @@ export function ArchitectureNode({
       {selected && <pointLight color={color} distance={4.5} intensity={2.2} position={[0, 0.7, 0]} />}
 
       <Html center position={[0, 0.72, 0]} sprite zIndexRange={[20, 0]}>
-        <div
+        <button
+          type="button"
           dir="rtl"
+          aria-label={`انتخاب دامنه ${node.domain.title}`}
+          aria-pressed={selected}
+          onClick={(event) => {
+            event.stopPropagation();
+            onSelect(node.id);
+          }}
+          onPointerDown={(event) => event.stopPropagation()}
+          onPointerEnter={() => setHovered(true)}
+          onPointerLeave={() => setHovered(false)}
           style={{
             background: selected ? "rgba(15, 23, 42, 0.98)" : "rgba(2, 6, 23, 0.88)",
             border: `1px solid ${selected ? color : `${color}88`}`,
             borderRadius: 8,
             boxShadow: selected ? `0 0 18px ${color}66` : "0 6px 16px rgba(0,0,0,0.28)",
             color: "#f8fafc",
+            cursor: "pointer",
+            display: "block",
             fontFamily: "Vazirmatn, sans-serif",
             fontSize: 11,
             fontWeight: 800,
             lineHeight: 1.4,
             opacity,
             padding: "4px 8px",
-            pointerEvents: "none",
             textAlign: "center",
             whiteSpace: "nowrap",
           }}
         >
           {node.domain.title}
-        </div>
+        </button>
       </Html>
     </group>
   );

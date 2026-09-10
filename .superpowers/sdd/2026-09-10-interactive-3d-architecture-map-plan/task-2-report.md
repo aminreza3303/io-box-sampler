@@ -163,3 +163,49 @@ Process exited with code 0.
 ```
 
 The existing multiple-lockfile workspace-root warning was emitted and did not affect the successful build. No focused test was added because this is a browser layout sizing correction and the existing project has no scene DOM test harness; the explicit wrapper/Canvas styles are covered by the production type/build check and the visual QA criterion above.
+
+## Final visual QA node-label selection fix
+
+### Finding
+
+The visible domain label inside the 3D canvas was a non-interactive Drei `Html` `div` with `pointer-events: none`, so clicking the label did not select its node even though the underlying 3D mesh had a click handler.
+
+### Fix
+
+- Replaced the visible node-label `div` with a native `button` in `apps/command-center/components/architecture-map/architecture-node.tsx`.
+- Added the Persian accessible name `انتخاب دامنه ${node.domain.title}` and `aria-pressed={selected}`.
+- Added a button `onClick` that stops propagation and calls `onSelect(node.id)`.
+- Preserved native button keyboard activation via Enter and Space.
+- Preserved the existing visual label styling and extended the existing hover-scale state to label pointer enter/leave, while leaving the 3D mesh click handler intact.
+- Removed the label's `pointer-events: none` so the overlay is now a usable node-selection target.
+
+### Verification
+
+Focused architecture test, run from `apps/command-center`:
+
+```powershell
+npm run test -- lib/architecture-map.test.ts
+```
+
+```text
+✓ lib/architecture-map.test.ts (5 tests)
+Test Files  1 passed (1)
+Tests  5 passed (5)
+```
+
+Production build, run from `apps/command-center`:
+
+```powershell
+npm run build
+```
+
+```text
+✓ Compiled successfully in 13.1s
+Linting and checking validity of types ...
+✓ Generating static pages (46/46)
+Finalizing page optimization ...
+Collecting build traces ...
+Process exited with code 0.
+```
+
+The existing multiple-lockfile workspace-root warning was emitted and did not affect the successful test or build.
