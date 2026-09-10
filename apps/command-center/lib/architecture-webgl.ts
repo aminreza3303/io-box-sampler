@@ -35,13 +35,14 @@ export function isArchitectureRendererInitializationError(
 function handleArchitectureRendererRejection(event: PromiseRejectionEvent) {
   if (!isArchitectureRendererInitializationError(event.reason)) return;
   event.preventDefault();
+  event.stopImmediatePropagation();
   event.reason.notifyFallback();
 }
 
 // R3F's Canvas starts an async configure run without attaching a rejection handler.
 // Keep this guard feature-scoped: only our tagged renderer failures are prevented.
 if (typeof window !== "undefined") {
-  window.addEventListener("unhandledrejection", handleArchitectureRendererRejection);
+  window.addEventListener("unhandledrejection", handleArchitectureRendererRejection, { capture: true });
 }
 
 export function canCreateArchitectureRenderer(): boolean {
