@@ -10,6 +10,7 @@ import {
   getArchitectureNode,
 } from "../../lib/architecture-map";
 import { filterEdgesToVisibleNodes, resolveVisibleSelection } from "../../lib/architecture-map-page-model";
+import { canCreateArchitectureRenderer } from "../../lib/architecture-webgl";
 import {
   domainGroupMeta,
   type DomainGroupId,
@@ -37,14 +38,6 @@ const ArchitectureScene = dynamic(
 
 type WebGlState = "checking" | "available" | "unavailable";
 type ViewMode = "3d" | "2d";
-
-const floorLabels: Record<string, string> = {
-  governance: "حاکمیت",
-  core: "هسته",
-  finance: "مالی",
-  ecosystem: "اکوسیستم",
-  experience: "تجربه",
-};
 
 const cameraLabels: Record<ArchitectureCameraPreset, string> = {
   isometric: "ایزومتریک",
@@ -85,18 +78,6 @@ class SceneErrorBoundary extends Component<
   }
 }
 
-function supportsWebGl(): boolean {
-  try {
-    const canvas = document.createElement("canvas");
-    return Boolean(
-      window.WebGLRenderingContext
-      && (canvas.getContext("webgl2") || canvas.getContext("webgl")),
-    );
-  } catch {
-    return false;
-  }
-}
-
 export function ArchitectureMapPage() {
   const [search, setSearch] = useState("");
   const [selectedFloorId, setSelectedFloorId] = useState<string | "all">("all");
@@ -122,7 +103,7 @@ export function ArchitectureMapPage() {
   }, []);
 
   useEffect(() => {
-    const available = supportsWebGl();
+    const available = canCreateArchitectureRenderer();
     setWebGlState(available ? "available" : "unavailable");
     if (!available) setViewMode("2d");
   }, [sceneRetryToken]);
@@ -152,17 +133,19 @@ export function ArchitectureMapPage() {
 
   useEffect(() => {
     const nextSelection = resolveVisibleSelection(filteredNodes, selectedId);
-    if (nextSelection && nextSelection !== selectedId) setSelectedId(nextSelection);
+    if (nextSelection !== selectedId) setSelectedId(nextSelection ?? "");
   }, [filteredNodes, selectedId]);
 
-  const selected = getArchitectureNode(selectedId) ?? getArchitectureNode("wallet")!;
+  const selected = filteredNodes.length > 0
+    ? getArchitectureNode(selectedId) ?? getArchitectureNode(filteredNodes[0].id)
+    : undefined;
   const dependencies = useMemo(
-    () => architectureEdges.filter((edge) => edge.to === selected.id),
-    [selected.id],
+    () => selected ? architectureEdges.filter((edge) => edge.to === selected.id) : [],
+    [selected],
   );
   const dependents = useMemo(
-    () => architectureEdges.filter((edge) => edge.from === selected.id),
-    [selected.id],
+    () => selected ? architectureEdges.filter((edge) => edge.from === selected.id) : [],
+    [selected],
   );
 
   const selectNode = useCallback((id: string) => {
@@ -199,7 +182,7 @@ export function ArchitectureMapPage() {
 
   const activeFloorLabel = selectedFloorId === "all"
     ? "همهٔ طبقه‌ها"
-    : `طبقهٔ ${floorLabels[selectedFloorId] ?? selectedFloorId}`;
+    : `طبقهٔ ${architectureFloors.find((floor) => floor.id === selectedFloorId)?.label ?? selectedFloorId}`;
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900 sm:px-8" dir="rtl">
@@ -266,7 +249,7 @@ export function ArchitectureMapPage() {
               <Button type="button" variant={selectedFloorId === "all" ? "primary" : "outline"} onClick={() => setSelectedFloorId("all")} aria-pressed={selectedFloorId === "all"}>همهٔ طبقه‌ها</Button>
               {architectureFloors.map((floor) => (
                 <Button key={floor.id} type="button" variant={selectedFloorId === floor.id ? "primary" : "outline"} onClick={() => setSelectedFloorId(floor.id)} aria-pressed={selectedFloorId === floor.id}>
-                  {floorLabels[floor.id] ?? floor.title}
+                  {floor.label}
                 </Button>
               ))}
             </div>
@@ -300,10 +283,15 @@ export function ArchitectureMapPage() {
             )}
 
             <div className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 shadow-xl" style={{ minHeight: 560 }}>
-              {viewMode === "3d" && webGlState === "checking" && (
+              {filteredNodes.length === 0 && (
+                <div className="grid min-h-[560px] place-items-center p-6 text-center text-sm text-slate-300" role="status">
+                  هیچ دامنه‌ای با فیلترهای فعلی پیدا نشد؛ فیلترها را تغییر دهید.
+                </div>
+              )}
+              {filteredNodes.length > 0 && viewMode === "3d" && webGlState === "checking" && (
                 <div className="grid min-h-[560px] place-items-center text-sm text-slate-300">در حال بررسی WebGL…</div>
               )}
-              {viewMode === "3d" && webGlState === "available" && (
+              {filteredNodes.length > 0 && viewMode === "3d" && webGlState === "available" && selected && (
                 <SceneErrorBoundary onError={handleSceneError} resetKey={sceneRetryToken}>
                   <ArchitectureScene
                     key={sceneRetryToken}
@@ -321,14 +309,14 @@ export function ArchitectureMapPage() {
                   />
                 </SceneErrorBoundary>
               )}
-              {viewMode === "2d" && (
+              {filteredNodes.length > 0 && viewMode === "2d" && selected && (
                 <ArchitectureFallback nodes={filteredNodes} edges={filteredEdges} selectedId={selected.id} onSelectNode={selectNode} />
               )}
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600 shadow-sm">
               <span><strong className="text-slate-900">{activeFloorLabel}</strong> · {filteredNodes.length.toLocaleString("fa-IR")} دامنه · {filteredEdges.length.toLocaleString("fa-IR")} رابطه</span>
-              <button type="button" className="font-black text-cyan-700 xl:hidden" onClick={() => setMobileDetailsOpen(true)}>نمایش جزئیات {selected.domain.title}</button>
+              {selected && <button type="button" className="font-black text-cyan-700 xl:hidden" onClick={() => setMobileDetailsOpen(true)}>نمایش جزئیات {selected.domain.title}</button>}
             </div>
 
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" aria-label="راهنمای نقشه">
@@ -357,14 +345,20 @@ export function ArchitectureMapPage() {
 
           <aside className="hidden xl:block xl:self-start">
             <div className="sticky top-24">
-              <ArchitectureDetailsPanel selected={selected} dependencies={dependencies} dependents={dependents} />
+              {selected ? (
+                <ArchitectureDetailsPanel selected={selected} dependencies={dependencies} dependents={dependents} />
+              ) : (
+                <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-5 text-sm leading-7 text-slate-500">
+                  هیچ دامنه‌ای با فیلترهای فعلی برای نمایش جزئیات انتخاب نشده است.
+                </section>
+              )}
             </div>
           </aside>
         </div>
       </div>
 
       <div className="xl:hidden">
-        {mobileDetailsOpen && (
+        {mobileDetailsOpen && selected && (
           <ArchitectureDetailsPanel
             selected={selected}
             dependencies={dependencies}

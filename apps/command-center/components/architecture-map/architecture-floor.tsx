@@ -48,7 +48,7 @@ export function ArchitectureFloor({ floor, selected, onSelect, slabGeometry }: A
         sectionThickness={0.8}
       />
 
-      <Html center position={[-7.15, 0.42, 0]} transform sprite>
+      <Html center position={[-7.15, 0.42, 0]} transform sprite zIndexRange={[30, 0]}>
         <button
           type="button"
           onClick={(event) => {
@@ -71,7 +71,7 @@ export function ArchitectureFloor({ floor, selected, onSelect, slabGeometry }: A
             whiteSpace: "nowrap",
           }}
         >
-          {floor.title}
+          {floor.label}
         </button>
       </Html>
     </group>

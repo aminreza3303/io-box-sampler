@@ -3,6 +3,7 @@ import { domainRelationships, domains, type DomainRecord, type DomainRelationshi
 export type ArchitectureFloor = {
   id: string;
   title: string;
+  label: string;
   height: number;
 };
 
@@ -24,17 +25,18 @@ export type ArchitectureEdge = {
 };
 
 const floorAssignments = [
-  { id: "governance", title: "Governance", domains: ["policy", "limits", "admin-panel"] },
-  { id: "core", title: "Core", domains: ["kyc", "wallet", "currency", "card", "transfer", "qr"] },
-  { id: "finance", title: "Finance", domains: ["fx-market", "loan", "gold", "insurance", "special-offer", "buy-toman"] },
-  { id: "ecosystem", title: "Ecosystem", domains: ["tickets", "hotel", "agents", "topup", "snapp", "rates", "donations"] },
-  { id: "experience", title: "Experience", domains: ["profile", "transactions", "support", "i18n", "redesign", "mobile"] },
+  { id: "governance", title: "Governance", label: "حاکمیت", domains: ["policy", "limits", "admin-panel"] },
+  { id: "core", title: "Core", label: "هسته", domains: ["kyc", "wallet", "currency", "card", "transfer", "qr"] },
+  { id: "finance", title: "Finance", label: "مالی", domains: ["fx-market", "loan", "gold", "insurance", "special-offer", "buy-toman"] },
+  { id: "ecosystem", title: "Ecosystem", label: "اکوسیستم", domains: ["tickets", "hotel", "agents", "topup", "snapp", "rates", "donations"] },
+  { id: "experience", title: "Experience", label: "تجربه", domains: ["profile", "transactions", "support", "i18n", "redesign", "mobile"] },
 ] as const;
 
 const floorHeight = 4;
 export const architectureFloors: ArchitectureFloor[] = floorAssignments.map((floor, index) => ({
   id: floor.id,
   title: floor.title,
+  label: floor.label,
   height: index * floorHeight,
 }));
 

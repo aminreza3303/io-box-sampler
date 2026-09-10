@@ -17,6 +17,13 @@ describe("architecture map model", () => {
       ecosystem: ["tickets", "hotel", "agents", "topup", "snapp", "rates", "donations"],
       experience: ["profile", "transactions", "support", "i18n", "redesign", "mobile"],
     });
+    expect(Object.fromEntries(architectureFloors.map((floor) => [floor.id, floor.label]))).toEqual({
+      governance: "حاکمیت",
+      core: "هسته",
+      finance: "مالی",
+      ecosystem: "اکوسیستم",
+      experience: "تجربه",
+    });
     expect(architectureNodes.every((node) => node.position[2] === getArchitectureFloor(node.floorId)?.height)).toBe(true);
     expect(architectureFloors.map((floor) => getArchitectureFloor(floor.id))).toEqual(architectureFloors);
     expect(getArchitectureFloor("missing")).toBeUndefined();

@@ -21,14 +21,6 @@ const groupStyles: Record<DomainGroupId, string> = {
   platform: "border-emerald-300 bg-emerald-50 text-emerald-950",
 };
 
-const floorLabels: Record<string, string> = {
-  governance: "حاکمیت",
-  core: "هسته",
-  finance: "مالی",
-  ecosystem: "اکوسیستم",
-  experience: "تجربه",
-};
-
 export function ArchitectureFallback({ nodes, edges, selectedId, onSelectNode }: ArchitectureFallbackProps) {
   const nodeIds = new Set(nodes.map((node) => node.id));
   const visibleFloors = architectureFloors.filter((floor) => nodes.some((node) => node.floorId === floor.id));
@@ -55,7 +47,7 @@ export function ArchitectureFallback({ nodes, edges, selectedId, onSelectNode }:
             return (
               <section key={floor.id} className="rounded-2xl border border-slate-700 bg-slate-900/80 p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <h3 className="font-black">طبقهٔ {floorLabels[floor.id] ?? floor.title}</h3>
+                  <h3 className="font-black">طبقهٔ {floor.label}</h3>
                   <span className="text-xs text-slate-400">{floorNodes.length.toLocaleString("fa-IR")} دامنه</span>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

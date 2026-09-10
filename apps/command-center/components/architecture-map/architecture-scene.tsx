@@ -11,6 +11,7 @@ import {
   type ArchitectureEdge,
   type ArchitectureNode,
 } from "../../lib/architecture-map";
+import { createArchitectureRenderer } from "../../lib/architecture-webgl";
 import { ArchitectureEdge as ArchitectureEdgeView } from "./architecture-edge";
 import { ArchitectureFloor } from "./architecture-floor";
 import { ArchitectureNode as ArchitectureNodeView } from "./architecture-node";
@@ -195,15 +196,17 @@ export function ArchitectureScene(props: ArchitectureSceneProps) {
       style={{
         width: "100%",
         height: 560,
+        isolation: "isolate",
         minHeight: 560,
         position: "relative",
         background: "#020617",
+        zIndex: 0,
       }}
     >
       <Canvas
         camera={{ far: 100, fov: 46, near: 0.1, position: [18, 17, 22] }}
         dpr={[1, 1.75]}
-        gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+        gl={(defaults) => createArchitectureRenderer(defaults, props.onSceneError)}
         onCreated={({ gl, scene }) => {
           try {
             if (gl.getContext().isContextLost()) throw new Error("WebGL context unavailable");
