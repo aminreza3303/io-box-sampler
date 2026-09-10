@@ -70,10 +70,10 @@ export const architectureEdges: ArchitectureEdge[] = domainRelationships.map((re
   };
 });
 
-export function getArchitectureNode(id: string) {
+export function getArchitectureNode(id: string): ArchitectureNode | undefined {
   return nodeById.get(id);
 }
 
-export function getArchitectureFloor(id: string) {
+export function getArchitectureFloor(id: string): ArchitectureFloor | undefined {
   return architectureFloors.find((floor) => floor.id === id);
 }
