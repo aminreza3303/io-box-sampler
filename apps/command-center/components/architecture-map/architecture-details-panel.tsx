@@ -3,7 +3,7 @@ import {
   type ArchitectureEdge,
   type ArchitectureNode,
 } from "../../lib/architecture-map";
-import type { DomainGroupId, DomainPriority, DomainStatus } from "../../lib/domain-map";
+import { domainGroupMeta, type DomainPriority, type DomainStatus } from "../../lib/domain-map";
 import { Badge } from "../ui/badge";
 import { Sheet } from "../ui/sheet";
 
@@ -12,14 +12,6 @@ export type ArchitectureDetailsPanelProps = {
   dependencies: ArchitectureEdge[];
   dependents: ArchitectureEdge[];
   onClose?: () => void;
-};
-
-const groupLabels: Record<DomainGroupId, string> = {
-  infra: "زیرساخت افقی",
-  core: "هستهٔ نئوبانک",
-  finance: "محصولات مالی و عملیات",
-  ecosystem: "اکوسیستم",
-  platform: "پلتفرم کلاینت",
 };
 
 const priorityTones: Record<DomainPriority, "danger" | "warning" | "success"> = {
@@ -69,6 +61,7 @@ function RelationshipList({
 function DetailsContent({ selected, dependencies, dependents }: Omit<ArchitectureDetailsPanelProps, "onClose">) {
   const { domain } = selected;
   const status = statusMeta[domain.status];
+  const groupLabel = domainGroupMeta.find((group) => group.id === domain.group)?.title ?? domain.group;
 
   return (
     <div className="space-y-5">
@@ -76,7 +69,7 @@ function DetailsContent({ selected, dependencies, dependents }: Omit<Architectur
         <p className="text-xs font-bold text-cyan-600">دامنه انتخاب‌شده</p>
         <h2 className="mt-1 text-2xl font-black text-slate-950">{domain.title}</h2>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Badge tone="info">{groupLabels[domain.group]}</Badge>
+          <Badge tone="info">{groupLabel}</Badge>
           <Badge tone={priorityTones[domain.priority]}>{domain.priority}</Badge>
           <Badge tone={status.tone}>{status.label}</Badge>
         </div>

@@ -9,6 +9,7 @@ import {
   architectureNodes,
   getArchitectureNode,
 } from "../../lib/architecture-map";
+import { filterEdgesToVisibleNodes, resolveVisibleSelection } from "../../lib/architecture-map-page-model";
 import {
   domainGroupMeta,
   type DomainGroupId,
@@ -146,14 +147,12 @@ export function ArchitectureMapPage() {
   }, [search, selectedFloorId, selectedGroup, selectedPriority, selectedStatus, visibleFloorIds]);
 
   const filteredEdges = useMemo(() => {
-    const ids = new Set(filteredNodes.map((node) => node.id));
-    return architectureEdges.filter((edge) => ids.has(edge.from) && ids.has(edge.to));
+    return filterEdgesToVisibleNodes(filteredNodes, architectureEdges);
   }, [filteredNodes]);
 
   useEffect(() => {
-    if (filteredNodes.some((node) => node.id === selectedId)) return;
-    const nextSelection = filteredNodes.find((node) => node.id === "wallet") ?? filteredNodes[0];
-    if (nextSelection) setSelectedId(nextSelection.id);
+    const nextSelection = resolveVisibleSelection(filteredNodes, selectedId);
+    if (nextSelection && nextSelection !== selectedId) setSelectedId(nextSelection);
   }, [filteredNodes, selectedId]);
 
   const selected = getArchitectureNode(selectedId) ?? getArchitectureNode("wallet")!;
@@ -315,6 +314,7 @@ export function ArchitectureMapPage() {
                     selectedFloorId={selectedFloorId === "all" ? selected.floorId : selectedFloorId}
                     onSelectNode={selectNode}
                     onSelectFloor={selectFloor}
+                    onSceneError={handleSceneError}
                     cameraPreset={cameraPreset}
                     resetToken={resetToken}
                     reducedMotion={reducedMotion}

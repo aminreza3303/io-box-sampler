@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { architectureEdges, architectureFloors, architectureNodes, getArchitectureFloor, getArchitectureNode } from "./architecture-map";
+import { filterEdgesToVisibleNodes, resolveVisibleSelection } from "./architecture-map-page-model";
 import { domainRelationships, domains } from "./domain-map";
 
 describe("architecture map model", () => {
@@ -30,5 +31,23 @@ describe("architecture map model", () => {
 
   it("keeps the gold domain in the shared source model", () => {
     expect(getArchitectureNode("gold")?.domain.title).toBe("طلا");
+  });
+
+  it("keeps only edges whose endpoints are both visible", () => {
+    const visibleNodes = architectureNodes.filter((node) => ["currency", "wallet"].includes(node.id));
+    const visibleEdges = filterEdgesToVisibleNodes(visibleNodes, architectureEdges);
+
+    expect(visibleEdges.map((edge) => edge.id)).toEqual(["currency->wallet"]);
+    expect(visibleEdges.every((edge) => visibleNodes.some((node) => node.id === edge.from) && visibleNodes.some((node) => node.id === edge.to))).toBe(true);
+  });
+
+  it("replaces a hidden selection with wallet or the first visible node", () => {
+    const walletVisible = architectureNodes.filter((node) => ["currency", "wallet"].includes(node.id));
+    const walletHidden = architectureNodes.filter((node) => ["policy", "limits"].includes(node.id));
+
+    expect(resolveVisibleSelection(walletVisible, "gold")).toBe("wallet");
+    expect(resolveVisibleSelection(walletHidden, "gold")).toBe("policy");
+    expect(resolveVisibleSelection([], "gold")).toBeUndefined();
+    expect(resolveVisibleSelection(walletVisible, "currency")).toBe("currency");
   });
 });

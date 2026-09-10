@@ -25,12 +25,36 @@ export type ArchitectureSceneProps = {
   selectedFloorId?: string;
   onSelectNode: (id: string) => void;
   onSelectFloor: (floorId: string) => void;
+  onSceneError: () => void;
   cameraPreset: ArchitectureCameraPreset;
   resetToken: number;
   reducedMotion: boolean;
 };
 
 type CameraRigProps = Pick<ArchitectureSceneProps, "cameraPreset" | "resetToken" | "selectedFloorId">;
+
+function SceneFailureGuard({ onSceneError }: Pick<ArchitectureSceneProps, "onSceneError">) {
+  const { gl } = useThree();
+
+  useEffect(() => {
+    const canvas = gl.domElement;
+    const handleContextLost = (event: Event) => {
+      event.preventDefault();
+      onSceneError();
+    };
+
+    canvas.addEventListener("webglcontextlost", handleContextLost);
+    try {
+      if (gl.getContext().isContextLost()) onSceneError();
+    } catch {
+      onSceneError();
+    }
+
+    return () => canvas.removeEventListener("webglcontextlost", handleContextLost);
+  }, [gl, onSceneError]);
+
+  return null;
+}
 
 function CameraRig({ cameraPreset, resetToken, selectedFloorId }: CameraRigProps) {
   const { camera } = useThree();
@@ -116,6 +140,7 @@ function SceneContents(props: ArchitectureSceneProps) {
 
   return (
     <>
+      <SceneFailureGuard onSceneError={props.onSceneError} />
       <color attach="background" args={["#020617"]} />
       <fog attach="fog" args={["#020617", 26, 58]} />
       <ambientLight intensity={0.62} />
@@ -171,9 +196,14 @@ export function ArchitectureScene(props: ArchitectureSceneProps) {
         camera={{ far: 100, fov: 46, near: 0.1, position: [18, 17, 22] }}
         dpr={[1, 1.75]}
         gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-        onCreated={({ scene }) => {
-          scene.background = new Color("#020617");
-          scene.fog = new Fog("#020617", 26, 58);
+        onCreated={({ gl, scene }) => {
+          try {
+            if (gl.getContext().isContextLost()) throw new Error("WebGL context unavailable");
+            scene.background = new Color("#020617");
+            scene.fog = new Fog("#020617", 26, 58);
+          } catch {
+            props.onSceneError();
+          }
         }}
         shadows
       >
