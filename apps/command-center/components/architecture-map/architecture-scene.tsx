@@ -191,7 +191,15 @@ function SceneContents(props: ArchitectureSceneProps) {
 
 export function ArchitectureScene(props: ArchitectureSceneProps) {
   return (
-    <div style={{ width: "100%", height: "100%", minHeight: 560, background: "#020617" }}>
+    <div
+      style={{
+        width: "100%",
+        height: 560,
+        minHeight: 560,
+        position: "relative",
+        background: "#020617",
+      }}
+    >
       <Canvas
         camera={{ far: 100, fov: 46, near: 0.1, position: [18, 17, 22] }}
         dpr={[1, 1.75]}
@@ -205,6 +213,7 @@ export function ArchitectureScene(props: ArchitectureSceneProps) {
             props.onSceneError();
           }
         }}
+        style={{ width: "100%", height: "100%", display: "block" }}
         shadows
       >
         <SceneContents {...props} />

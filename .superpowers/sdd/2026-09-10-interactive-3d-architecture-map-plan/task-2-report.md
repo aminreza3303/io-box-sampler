@@ -122,3 +122,44 @@ The existing multiple-lockfile workspace-root warning was emitted again and did 
 
 - Next.js continues to report the pre-existing multiple-lockfile workspace-root warning.
 - End-to-end keyboard and visual interaction QA remains dependent on the later page integration task mounting the scene.
+
+## Final visual QA sizing fix
+
+### Finding (verbatim)
+
+> A final visual QA found a load-bearing issue after Task 4: the R3F canvas renders at the browser default 150px height inside the intended 560px scene frame, compressing the floors/modules and making the 3D map hard to use.
+
+### Fix
+
+- Updated only `apps/command-center/components/architecture-map/architecture-scene.tsx` for the sizing change.
+- The R3F wrapper now explicitly has `height: 560` and `minHeight: 560` with responsive `width: "100%"`.
+- The Canvas now explicitly has `width: "100%"`, `height: "100%"`, and `display: "block"`, so its actual browser rect fills the 560px parent instead of falling back to 150px.
+- Existing OrbitControls, callbacks, camera behavior, and context-loss handling were preserved.
+
+### Verification
+
+Command run from `apps/command-center`:
+
+```powershell
+npm run build
+```
+
+Output:
+
+```text
+> command-center@0.1.0 build
+> next build
+
+▲ Next.js 15.5.9
+Creating an optimized production build ...
+✓ Compiled successfully in 6.7s
+Linting and checking validity of types ...
+Collecting page data ...
+✓ Generating static pages (46/46)
+Finalizing page optimization ...
+Collecting build traces ...
+
+Process exited with code 0.
+```
+
+The existing multiple-lockfile workspace-root warning was emitted and did not affect the successful build. No focused test was added because this is a browser layout sizing correction and the existing project has no scene DOM test harness; the explicit wrapper/Canvas styles are covered by the production type/build check and the visual QA criterion above.
