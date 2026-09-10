@@ -97,6 +97,7 @@ model User {
   createdProposals PlanProposal[]    @relation("ProposalCreator")
   reviewedProposals PlanProposal[]   @relation("ProposalReviewer")
   agentRuns        AgentRun[]        @relation("AgentRunActor")
+  scenarioAnalyses ScenarioAnalysis[] @relation("ScenarioAnalysisCreator")
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   archivedAt       DateTime?
@@ -481,4 +482,22 @@ model AgentMessage {
   createdAt DateTime          @default(now())
 
   @@index([runId, createdAt])
+}
+
+model ScenarioAnalysis {
+  id               String   @id @default(cuid())
+  title            String
+  description      String?
+  selectedDomainIds Json
+  projectIds       Json?
+  teamIds          Json?
+  assumptions      Json
+  estimate         Json
+  createdById      String
+  createdBy        User     @relation("ScenarioAnalysisCreator", fields: [createdById], references: [id])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([createdById, createdAt])
+  @@index([createdAt])
 }

@@ -20,11 +20,12 @@ export async function POST(request: Request) {
   let runId: string | undefined;
   try {
     const user = await requireUser(request);
-    const body = await request.json() as { message?: unknown; context?: unknown; processId?: unknown; domainId?: unknown };
+    const body = await request.json() as { message?: unknown; context?: unknown; processId?: unknown; domainId?: unknown; scenarioContext?: unknown };
     const message = typeof body.message === "string" ? body.message.trim() : "";
     const context = typeof body.context === "string" ? body.context.trim().slice(0, MAX_CONTEXT_LENGTH) : "";
     const processId = typeof body.processId === "string" ? body.processId : undefined;
     const domainId = typeof body.domainId === "string" ? body.domainId : undefined;
+    const scenarioContext = body.scenarioContext && typeof body.scenarioContext === "object" ? JSON.stringify(body.scenarioContext).slice(0, 12_000) : "";
     if (!message) return NextResponse.json({ error: "پیام دستیار الزامی است." }, { status: 400 });
     if (message.length > MAX_MESSAGE_LENGTH) return NextResponse.json({ error: "پیام بیش از حد طولانی است." }, { status: 400 });
 
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
       "قواعد اجرا: در صورت نیاز کار را به تحلیلگر محصول، سازنده یا بازبین OMP واگذار کن و خروجی را با مالک، موعد، ریسک و معیار پذیرش برگردان.",
       selectedProcess ? `زمینه فرایند انتخاب‌شده: ${selectedProcess.title} — ${selectedProcess.summary}. کنترل‌های اجباری: ${selectedProcess.controls.join("، ")}.` : "زمینه فرایند انتخاب نشده است.",
       context ? `یادداشت زمینه‌ای مدیر: ${context}` : "",
+      scenarioContext ? `خلاصهٔ ساختاریافتهٔ سناریو برای تحلیل: ${scenarioContext}` : "",
       `پیام مدیر: ${message}`,
     ].filter(Boolean).join("\n\n");
 
@@ -53,7 +55,7 @@ export async function POST(request: Request) {
         actorId: user.userId,
         runtime: "hermes",
         prompt: message,
-        context: contextPayload as Prisma.InputJsonValue,
+        context: { ...contextPayload, scenarioContext: scenarioContext || undefined } as Prisma.InputJsonValue,
         messages: { create: { role: "USER", content: message } },
       },
     });

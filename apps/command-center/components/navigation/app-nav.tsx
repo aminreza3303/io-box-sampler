@@ -8,6 +8,7 @@ import { Button } from "../ui/button";
 const primaryNavigation = [
   { href: "/command-center", label: "اتاق فرمان" },
   { href: "/domains", label: "نقشه دامنه" },
+  { href: "/scenarios", label: "تحلیل سناریو" },
   { href: "/ai", label: "دستیار هوشمند" },
   { href: "/audit", label: "گزارش فعالیت" },
 ] as const;
