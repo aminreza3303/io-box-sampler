@@ -29,6 +29,7 @@ describe("strategic scenario catalog", () => {
     expect(scenarioTemplates.map((template) => template.id)).toEqual([
       "multi-currency-transfer", "fx-market", "merchant-offer", "kyc-card", "mobile-rewrite",
     ]);
+    expect(domains.some((domain) => domain.id === "gold")).toBe(true);
     expect(getStrategicScenario("wallet-round-up")?.id).toBe("wallet-round-up");
     expect(getStrategicScenario("not-in-catalog")).toBeUndefined();
   });
