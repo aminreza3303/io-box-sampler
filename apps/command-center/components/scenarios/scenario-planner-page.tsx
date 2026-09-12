@@ -1,109 +1,233 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { domainGroups } from "../../lib/domain-map";
-import { scenarioTemplates, type ScenarioEstimate } from "../../lib/scenario-planner";
+import type { ScenarioEstimate, ScenarioRequestDraft, StrategicScenario } from "../../lib/scenario-types";
 import { Badge } from "../ui/badge";
+import { ScenarioAssumptionsForm, createScenarioRequestDraft } from "./scenario-assumptions-form";
+import { ScenarioCatalogSection } from "./scenario-catalog-section";
 
-type Project = { id: string; name: string; code: string };
-type SavedAnalysis = { id: string; title: string; description?: string | null; selectedDomainIds: unknown; estimate: ScenarioEstimate; createdAt: string; createdBy?: { displayName: string } };
-type SessionStatus = { project: Project; session: { id: string; sessionName: string; status: string; lastRunAt?: string | null } | null; workspace: { key: string; available: boolean; source?: string; error?: string } };
+type Project = { id: string; name: string; code?: string };
+type Team = { id: string; name: string; project?: { name: string } | null };
+type SavedAnalysis = {
+  id: string;
+  title: string;
+  description?: string | null;
+  selectedDomainIds?: unknown;
+  projectIds?: unknown;
+  teamIds?: unknown;
+  assumptions?: unknown;
+  estimate?: unknown;
+  createdAt: string;
+  createdBy?: { displayName: string } | null;
+};
+type SessionStatus = {
+  project: Project;
+  session: { id: string; sessionName: string; status: string; lastRunAt?: string | null } | null;
+  workspace: { key: string; available: boolean; source?: string; error?: string };
+};
 type ChatProposal = { id: string; title: string; status: string };
+type ChatPayload = {
+  output?: string;
+  error?: string;
+  kind?: string;
+  proposal?: ChatProposal | null;
+  session?: { id: string; sessionName: string; status: string; workspaceKey: string; project: Project } | null;
+};
 
-const numberFormat = new Intl.NumberFormat("fa-IR");
-const statusLabels = { low: "اطمینان پایین", medium: "اطمینان متوسط", high: "اطمینان بالا" } as const;
+const numberFormat = new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 1 });
+const currencyLabels = { TOMAN: "تومان", USD: "دلار", IQD: "دینار" } as const;
 
-function faNumber(value: number) {
-  return numberFormat.format(value);
+function formatNumber(value: number | null | undefined, unit = "") {
+  return value === null || value === undefined || !Number.isFinite(value)
+    ? "دادهٔ کافی ثبت نشده"
+    : `${numberFormat.format(value)}${unit ? ` ${unit}` : ""}`;
 }
 
-function costLabel(cost: ScenarioEstimate["metrics"]["cost"]) {
-  return cost ? `${faNumber(cost.low)} تا ${faNumber(cost.high)} ${cost.currency}` : "نیازمند نرخ";
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function HermesSessionControls({ projects, selectedProjectId, onProjectChange, status }: { projects: Project[]; selectedProjectId: string; onProjectChange: (value: string) => void; status: SessionStatus | null }) {
-  return <section className="rounded-2xl border border-violet-100 bg-violet-50 p-5 shadow-sm"><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-sm font-bold text-violet-700">اتصال Hermes به پروژه</p><h2 className="mt-1 text-xl font-black text-violet-950">workspace و session فعال</h2><p className="mt-2 max-w-3xl text-sm leading-7 text-violet-900">با انتخاب پروژه، گفت‌وگو در workspace همان پروژه و session پایدار آن ادامه پیدا می‌کند. Hermes فقط پیشنهاد می‌سازد؛ task بعد از تأیید مدیرعامل وارد پنل می‌شود.</p></div><label className="min-w-64 text-xs font-black text-violet-900">پروژهٔ کاری<select value={selectedProjectId} onChange={(event) => onProjectChange(event.target.value)} className="mt-2 w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-violet-300"><option value="">بدون پروژه / one-shot</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label></div>{selectedProjectId && <div className={`mt-4 rounded-xl px-4 py-3 text-xs leading-6 ${status?.workspace.available ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"}`}>{status?.workspace.available ? <><strong>آمادهٔ اجرا</strong> · workspace: {status.workspace.key}{status.session ? ` · session: ${status.session.sessionName}` : " · session با اولین پیام ساخته می‌شود."}</> : status?.workspace.error ?? "در حال بررسی workspace پروژه…"}</div>}</section>;
+function isScenarioEstimate(value: unknown): value is ScenarioEstimate {
+  return isRecord(value) && value.modelVersion === "scenario-business-case/v1" && Array.isArray(value.cases);
+}
+
+function requestDraftFromSnapshot(value: unknown): ScenarioRequestDraft | null {
+  if (!isRecord(value)) return null;
+  const { catalogSnapshot: _catalogSnapshot, ...candidate } = value;
+  if (
+    typeof candidate.title === "string" && Array.isArray(candidate.domainIds) && Array.isArray(candidate.cases) &&
+    Array.isArray(candidate.kpis) && Array.isArray(candidate.milestones) && Array.isArray(candidate.fieldEvidence) &&
+    isRecord(candidate.gateDecision)
+  ) return candidate as unknown as ScenarioRequestDraft;
+  return null;
+}
+
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function HermesSessionControls({ projects, selectedProjectId, onProjectChange, status }: {
+  projects: Project[];
+  selectedProjectId: string;
+  onProjectChange: (value: string) => void;
+  status: SessionStatus | null;
+}) {
+  return <section className="rounded-2xl border border-violet-100 bg-violet-50 p-5 shadow-sm">
+    <div className="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p className="text-sm font-bold text-violet-700">اتصال Hermes به پروژه</p>
+        <h2 className="mt-1 text-xl font-black text-violet-950">workspace و session فعال</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-7 text-violet-900">با انتخاب پروژه، گفت‌وگو در workspace همان پروژه و session پایدار آن ادامه پیدا می‌کند. Hermes پیشنهاد می‌دهد؛ اجرای تغییر نیازمند تأیید مدیرعامل است.</p>
+      </div>
+      <label className="min-w-64 text-xs font-black text-violet-900">پروژهٔ کاری
+        <select value={selectedProjectId} onChange={(event) => onProjectChange(event.target.value)} className="mt-2 w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-violet-300">
+          <option value="">بدون پروژه / one-shot</option>
+          {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
+        </select>
+      </label>
+    </div>
+    {selectedProjectId && <div className={`mt-4 rounded-xl px-4 py-3 text-xs leading-6 ${status?.workspace.available ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"}`}>
+      {status?.workspace.available ? <><strong>آمادهٔ اجرا</strong> · workspace: {status.workspace.key}{status.session ? ` · session: ${status.session.sessionName}` : " · session با اولین پیام ساخته می‌شود."}</> : status?.workspace.error ?? "در حال بررسی workspace پروژه…"}
+    </div>}
+  </section>;
+}
+
+function EstimateSummary({ estimate }: { estimate: ScenarioEstimate }) {
+  return <section className="space-y-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div><p className="text-xs font-black text-emerald-800">تحلیل نسخه‌دار ذخیره شد</p><h2 className="mt-1 text-xl font-black text-emerald-950">{estimate.title}</h2><p className="mt-2 text-xs leading-6 text-emerald-900">مقادیر زیر مستقیماً از خروجی محاسبهٔ سرور خوانده شده‌اند؛ مورد نامشخص به‌عنوان صفر نمایش داده نمی‌شود.</p></div>
+      <Badge tone="success">{estimate.modelVersion}</Badge>
+    </div>
+    <div className="grid gap-3 lg:grid-cols-3">{estimate.cases.map((scenarioCase) => <article key={scenarioCase.caseId} className="rounded-xl border border-emerald-100 bg-white p-4">
+      <h3 className="font-black">{scenarioCase.name}</h3>
+      <dl className="mt-3 space-y-2 text-xs">
+        <div className="flex justify-between gap-2"><dt className="text-slate-500">تلاش فنی</dt><dd className="font-bold">{formatNumber(scenarioCase.technical.metrics.personDays, "نفر-روز")}</dd></div>
+        <div className="flex justify-between gap-2"><dt className="text-slate-500">زمان تقویمی تخمینی</dt><dd className="font-bold">{formatNumber(scenarioCase.technical.metrics.calendarWeeks, "هفته")}</dd></div>
+        <div className="flex justify-between gap-2"><dt className="text-slate-500">سرمایه‌گذاری اولیه</dt><dd className="font-bold">{formatNumber(scenarioCase.financial.initialInvestment, currencyLabels[scenarioCase.financial.currency])}</dd></div>
+        <div className="flex justify-between gap-2"><dt className="text-slate-500">ارزش خالص</dt><dd className="font-bold">{formatNumber(scenarioCase.financial.netValue, currencyLabels[scenarioCase.financial.currency])}</dd></div>
+        <div className="flex justify-between gap-2"><dt className="text-slate-500">ROI</dt><dd className="font-bold">{formatNumber(scenarioCase.financial.roiPercent, "٪")}</dd></div>
+        <div className="flex justify-between gap-2"><dt className="text-slate-500">بازگشت سرمایه</dt><dd className="font-bold">{formatNumber(scenarioCase.financial.paybackMonths, "ماه")}</dd></div>
+      </dl>
+      {!!scenarioCase.financial.missingInputs.length && <p className="mt-3 rounded-lg bg-amber-50 p-2 text-[11px] leading-5 text-amber-900">ورودی‌های ناقص: {scenarioCase.financial.missingInputs.join("، ")}</p>}
+    </article>)}</div>
+    <div className="grid gap-3 sm:grid-cols-2"><div className="rounded-xl bg-white p-3 text-xs"><span className="text-slate-500">کامل‌بودن منشأ داده‌ها</span><p className="mt-1 font-black">{numberFormat.format(estimate.evidenceCompleteness.recorded)} ثبت‌شده · {numberFormat.format(estimate.evidenceCompleteness.missing)} نیازمند تکمیل</p></div><div className="rounded-xl bg-white p-3 text-xs"><span className="text-slate-500">خروجی با چه محدودیت‌هایی تفسیر شود؟</span><p className="mt-1 leading-5">{estimate.limitations.length ? estimate.limitations.join(" · ") : "محدودیتی از سوی محاسبه‌گر ثبت نشده است."}</p></div></div>
+    {!!estimate.warnings.length && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-6 text-amber-950"><p className="font-black">هشدارهای برآورد فنی</p><ul className="mt-1 list-disc space-y-1 pr-4">{estimate.warnings.map((warning, index) => <li key={`${index}-${warning}`}>{warning}</li>)}</ul></div>}
+  </section>;
 }
 
 export function ScenarioPlannerPage() {
-  const [title, setTitle] = useState("انتقال وجه چندارزی");
-  const [description, setDescription] = useState("بررسی اثر راه‌اندازی انتقال وجه چندارزی روی نیوکاش، شاطی و تراز");
-  const [selectedDomains, setSelectedDomains] = useState<string[]>(["transfer"]);
-  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [draft, setDraft] = useState<ScenarioRequestDraft>(() => createScenarioRequestDraft());
   const [projects, setProjects] = useState<Project[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [sessionStatus, setSessionStatus] = useState<SessionStatus | null>(null);
-  const [domainSearch, setDomainSearch] = useState("");
-  const [teamCount, setTeamCount] = useState("2");
-  const [weeklyCapacity, setWeeklyCapacity] = useState("5");
-  const [personDayRate, setPersonDayRate] = useState("");
-  const [bufferPercent, setBufferPercent] = useState("20");
   const [estimate, setEstimate] = useState<ScenarioEstimate | null>(null);
+  const [currentAnalysisId, setCurrentAnalysisId] = useState<string | null>(null);
   const [history, setHistory] = useState<SavedAnalysis[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [chatQuestion, setChatQuestion] = useState("این سناریو را از نظر ریسک، ترتیب اجرا و مالک هر اقدام بررسی کن.");
   const [chatOutput, setChatOutput] = useState("");
   const [chatState, setChatState] = useState<"idle" | "loading" | "blocked" | "failed">("idle");
   const [chatProposal, setChatProposal] = useState<ChatProposal | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState("");
 
   async function loadHistory() {
-    const [historyResponse, snapshotResponse] = await Promise.all([fetch("/api/scenarios"), fetch("/api/snapshot")]);
-    if (historyResponse.ok) setHistory(await historyResponse.json());
-    if (snapshotResponse.ok) {
-      const snapshot = await snapshotResponse.json() as { projects?: Project[] };
-      setProjects(snapshot.projects ?? []);
-      setSelectedProjectId((current) => current || snapshot.projects?.find((project) => project.code === "newcash")?.id || snapshot.projects?.[0]?.id || "");
-    }
+    const response = await fetch("/api/scenarios");
+    if (!response.ok) throw new Error("تاریخچهٔ تحلیل‌ها دریافت نشد.");
+    const payload: unknown = await response.json();
+    setHistory(Array.isArray(payload) ? payload as SavedAnalysis[] : []);
   }
 
-  useEffect(() => { void loadHistory().catch(() => undefined); }, []);
+  useEffect(() => {
+    let active = true;
+    async function loadPageData() {
+      setHistoryLoading(true);
+      try {
+        const [historyResponse, snapshotResponse, teamsResponse] = await Promise.all([
+          fetch("/api/scenarios"),
+          fetch("/api/snapshot"),
+          fetch("/api/teams"),
+        ]);
+        if (historyResponse.ok) {
+          const payload: unknown = await historyResponse.json();
+          if (active) setHistory(Array.isArray(payload) ? payload as SavedAnalysis[] : []);
+        }
+        if (snapshotResponse.ok) {
+          const snapshot: unknown = await snapshotResponse.json();
+          if (active && isRecord(snapshot) && Array.isArray(snapshot.projects)) {
+            const availableProjects = snapshot.projects as Project[];
+            setProjects(availableProjects);
+            setSelectedProjectId((current) => current || availableProjects.find((project) => project.code === "newcash")?.id || availableProjects[0]?.id || "");
+          }
+        }
+        if (teamsResponse.ok) {
+          const payload: unknown = await teamsResponse.json();
+          if (active) setTeams(Array.isArray(payload) ? payload as Team[] : []);
+        }
+        if (active && (!historyResponse.ok || !snapshotResponse.ok || !teamsResponse.ok)) setError("بخشی از فهرست‌های مجاز پروژه، تیم یا تاریخچه بارگیری نشد؛ اتصال را بررسی و صفحه را دوباره بارگذاری کنید.");
+      } catch (reason) {
+        if (active) setError(reason instanceof Error ? reason.message : "دریافت اطلاعات سناریو ناموفق بود.");
+      } finally {
+        if (active) setHistoryLoading(false);
+      }
+    }
+    void loadPageData();
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
-    if (!selectedProjectId) { setSessionStatus(null); return; }
-    fetch(`/api/ai/sessions?projectId=${encodeURIComponent(selectedProjectId)}`).then((response) => response.ok ? response.json() : Promise.reject(new Error("وضعیت workspace دریافت نشد."))).then((items: SessionStatus[]) => setSessionStatus(items[0] ?? null)).catch(() => setSessionStatus(null));
+    let active = true;
+    if (!selectedProjectId) { setSessionStatus(null); return () => { active = false; }; }
+    fetch(`/api/ai/sessions?projectId=${encodeURIComponent(selectedProjectId)}`)
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("وضعیت workspace دریافت نشد.")))
+      .then((items: SessionStatus[]) => { if (active) setSessionStatus(items[0] ?? null); })
+      .catch(() => { if (active) setSessionStatus(null); });
+    return () => { active = false; };
   }, [selectedProjectId]);
 
-  const filteredGroups = useMemo(() => {
-    const query = domainSearch.trim().toLowerCase();
-    if (!query) return domainGroups;
-    return domainGroups.map((group) => ({ ...group, domains: group.domains.filter((domain) => `${domain.title} ${domain.summary}`.toLowerCase().includes(query)) })).filter((group) => group.domains.length > 0);
-  }, [domainSearch]);
-
-  function applyTemplate(templateId: string) {
-    const template = scenarioTemplates.find((item) => item.id === templateId);
-    if (!template) return;
-    setTitle(template.title);
-    setDescription(template.description);
-    setSelectedDomains(template.domainIds);
+  function updateDraft(next: ScenarioRequestDraft) {
+    setDraft(next);
     setEstimate(null);
+    setCurrentAnalysisId(null);
     setChatOutput("");
     setChatProposal(null);
   }
 
-  function toggleDomain(id: string) {
-    setSelectedDomains((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  function applyScenario(scenario: StrategicScenario) {
+    setDraft((current) => ({
+      ...createScenarioRequestDraft(scenario),
+      projectIds: current.projectIds ?? [],
+      teamIds: current.teamIds ?? [],
+    }));
     setEstimate(null);
-  }
-
-  function toggleProject(id: string) {
-    setSelectedProjects((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+    setCurrentAnalysisId(null);
+    setChatOutput("");
+    setChatProposal(null);
+    setError("");
   }
 
   async function analyze() {
-    setLoading(true);
+    setAnalyzing(true);
     setError("");
+    setChatOutput("");
+    setChatProposal(null);
     try {
-      const response = await fetch("/api/scenarios/analyze", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title, description, domainIds: selectedDomains, projectIds: selectedProjects, assumptions: { teamCount: Number(teamCount), weeklyCapacity: Number(weeklyCapacity), personDayRate: personDayRate ? Number(personDayRate) : null, bufferPercent: Number(bufferPercent) } }) });
-      const payload = await response.json() as { estimate?: ScenarioEstimate; error?: string };
-      if (!response.ok || !payload.estimate) throw new Error(payload.error ?? "تحلیل سناریو ناموفق بود.");
+      const response = await fetch("/api/scenarios/analyze", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(draft),
+      });
+      const payload = await response.json() as { analysis?: { id?: string }; estimate?: unknown; error?: string };
+      if (!response.ok || !isScenarioEstimate(payload.estimate)) throw new Error(payload.error ?? "تحلیل سناریو ناموفق بود.");
       setEstimate(payload.estimate);
+      setCurrentAnalysisId(payload.analysis?.id ?? null);
       await loadHistory();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "تحلیل سناریو ناموفق بود.");
     } finally {
-      setLoading(false);
+      setAnalyzing(false);
     }
   }
 
@@ -114,11 +238,24 @@ export function ScenarioPlannerPage() {
     setChatProposal(null);
     setError("");
     try {
-      const response = await fetch("/api/ai/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ message: chatQuestion.trim(), projectId: selectedProjectId || undefined, context: `سناریو: ${estimate.title}\nتوضیح: ${estimate.description}`, scenarioContext: estimate }) });
-      const payload = await response.json() as { output?: string; error?: string; kind?: string; proposal?: ChatProposal | null; session?: { id: string; sessionName: string; status: string; workspaceKey: string; project: Project } | null };
+      const response = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          message: chatQuestion.trim(),
+          projectId: selectedProjectId || undefined,
+          context: `سناریو: ${estimate.title}\nحالت‌ها: ${estimate.cases.map((scenarioCase) => scenarioCase.name).join("، ")}`,
+          scenarioContext: estimate,
+        }),
+      });
+      const payload = await response.json() as ChatPayload;
       if (payload.output) setChatOutput(payload.output);
       if (payload.proposal) setChatProposal(payload.proposal);
-      if (payload.session) setSessionStatus((current) => current ? { ...current, session: { id: payload.session!.id, sessionName: payload.session!.sessionName, status: payload.session!.status }, workspace: { ...current.workspace, key: payload.session!.workspaceKey, available: true }, project: payload.session!.project } : null);
+      if (payload.session) setSessionStatus({
+        project: payload.session.project,
+        session: { id: payload.session.id, sessionName: payload.session.sessionName, status: payload.session.status },
+        workspace: { key: payload.session.workspaceKey, available: true },
+      });
       if (payload.kind === "blocked" || response.status === 503) setChatState("blocked");
       else if (!response.ok || payload.kind === "error") setChatState("failed");
       else setChatState("idle");
@@ -130,36 +267,59 @@ export function ScenarioPlannerPage() {
   }
 
   function restoreAnalysis(item: SavedAnalysis) {
-    setTitle(item.title);
-    setDescription(item.description ?? "");
-    setSelectedDomains(Array.isArray(item.selectedDomainIds) ? item.selectedDomainIds.filter((id): id is string => typeof id === "string") : []);
-    setEstimate(item.estimate);
+    const request = requestDraftFromSnapshot(item.assumptions);
+    if (request) setDraft(request);
+    else {
+      const base = createScenarioRequestDraft();
+      const restoredDomains = stringArray(item.selectedDomainIds);
+      setDraft({
+        ...base,
+        title: item.title,
+        description: item.description ?? "",
+        domainIds: restoredDomains.length ? restoredDomains : base.domainIds,
+        projectIds: stringArray(item.projectIds),
+        teamIds: stringArray(item.teamIds),
+      });
+    }
+    const savedEstimate = isScenarioEstimate(item.estimate) ? item.estimate : null;
+    setEstimate(savedEstimate);
+    setCurrentAnalysisId(savedEstimate ? item.id : null);
     setChatOutput("");
     setChatProposal(null);
+    setChatState("idle");
+    setError(savedEstimate ? "" : "این تحلیل قدیمی است؛ اطلاعات اصلی بازیابی شد. برای دیدن برآورد نسخه‌دار، دوباره تحلیل را اجرا کنید.");
   }
 
-  return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900 sm:px-8" dir="rtl">
-      <div className="mx-auto max-w-[1600px] space-y-6">
-        <header className="rounded-3xl bg-slate-950 p-6 text-white shadow-xl sm:p-8"><div className="flex flex-wrap items-start justify-between gap-5"><div><p className="text-sm font-semibold text-cyan-300">مقر فرماندهی / تحلیل تصمیم</p><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">طراحی سناریوی بیزینسی</h1><p className="mt-3 max-w-4xl text-sm leading-7 text-slate-300">اثر یک تصمیم را روی دامنه‌های محصول، فرایندها، تیم‌ها و چهار فاز اجرا ببینید؛ سپس همان برآورد ساختاریافته را برای تحلیل ریسک و برنامه‌ریزی به Hermes بسپارید.</p></div><div className="flex flex-wrap gap-2"><Badge tone="info">۲۸ دامنهٔ مرجع</Badge><Badge tone="success">برآورد شفاف</Badge><Badge tone="warning">هزینه بر اساس تومان/نفر-روز</Badge></div></div></header>
-        {error && <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm leading-7 text-rose-800">{error}</div>}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-black">سناریوهای آماده</h2><p className="mt-1 text-sm text-slate-500">یک الگوی نزدیک را انتخاب کنید و قبل از تحلیل اصلاحش کنید.</p></div><span className="text-xs text-slate-400">{scenarioTemplates.length} الگو</span></div><div className="mt-4 flex gap-3 overflow-x-auto pb-1">{scenarioTemplates.map((template) => <button key={template.id} type="button" onClick={() => applyTemplate(template.id)} className="min-w-56 rounded-xl border border-slate-200 bg-slate-50 p-3 text-right transition hover:border-cyan-400 hover:bg-cyan-50"><span className="block text-sm font-black">{template.title}</span><span className="mt-1 block text-xs leading-5 text-slate-500">{template.description}</span></button>)}</div></section>
+  return <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900 sm:px-8" dir="rtl">
+    <div className="mx-auto max-w-[1500px] space-y-6">
+      <header className="rounded-3xl bg-slate-950 p-6 text-white shadow-xl sm:p-8">
+        <div className="flex flex-wrap items-start justify-between gap-5"><div><p className="text-sm font-semibold text-cyan-300">مقر فرماندهی / تحلیل تصمیم</p><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">طراحی سناریوی بیزینسی</h1><p className="mt-3 max-w-4xl text-sm leading-7 text-slate-300">ایده‌های اسناد را با داده‌های داخلی و فرض‌های صریح ترکیب کنید؛ effort، چهار فاز، هزینه و منفعت سه حالت را بسنجید و سپس با زمینهٔ ذخیره‌شده با Hermes گفت‌وگو کنید.</p></div><div className="flex flex-wrap gap-2"><Badge tone="info">۱۳ فرضیهٔ سندی</Badge><Badge tone="success">۳ حالت مستقل</Badge><Badge tone="warning">محاسبهٔ مالی با دادهٔ ورودی</Badge></div></div>
+      </header>
 
-        <HermesSessionControls projects={projects} selectedProjectId={selectedProjectId} onProjectChange={setSelectedProjectId} status={sessionStatus} />
+      {error && <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm leading-7 text-rose-800">{error}</div>}
 
-        <div className="grid gap-6 2xl:grid-cols-[360px_minmax(0,1fr)_360px]">
-          <section className="space-y-5 2xl:order-1"><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-xl font-black">پارامترهای سناریو</h2><p className="mt-1 text-sm leading-6 text-slate-500">فرض‌ها را قابل تغییر نگه دارید تا اختلاف سناریوها دیده شود.</p><label className="mt-4 block text-sm font-bold">عنوان سناریو<input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-cyan-300" /></label><label className="mt-3 block text-sm font-bold">صورت مسئله<textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={4000} rows={4} className="mt-2 w-full resize-y rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-cyan-300" /></label><div className="mt-4 grid grid-cols-2 gap-3"><label className="text-xs font-bold text-slate-600">تعداد تیم<input type="number" min="1" max="20" value={teamCount} onChange={(event) => setTeamCount(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" /></label><label className="text-xs font-bold text-slate-600">ظرفیت هفتگی هر تیم<input type="number" min="1" max="40" value={weeklyCapacity} onChange={(event) => setWeeklyCapacity(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" /></label><label className="text-xs font-bold text-slate-600">نرخ نفر-روز (تومان)<input type="number" min="0" max="1000000000" value={personDayRate} onChange={(event) => setPersonDayRate(event.target.value)} placeholder="وارد نشده" className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" /></label><label className="text-xs font-bold text-slate-600">ذخیره ریسک<input type="number" min="0" max="100" value={bufferPercent} onChange={(event) => setBufferPercent(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" /></label></div><div className="mt-4"><p className="text-sm font-bold">پروژه‌های درگیر</p><div className="mt-2 flex flex-wrap gap-2">{projects.length ? projects.map((project) => <button key={project.id} type="button" onClick={() => toggleProject(project.id)} className={`rounded-full px-3 py-1.5 text-xs font-bold ${selectedProjects.includes(project.id) ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-600"}`}>{project.name}</button>) : <span className="text-xs text-slate-400">پروژه‌ها پس از اتصال به داده نمایش داده می‌شوند.</span>}</div></div><button type="button" onClick={() => void analyze()} disabled={loading || !title.trim() || selectedDomains.length === 0} className="mt-5 w-full rounded-xl bg-cyan-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50">{loading ? "در حال محاسبه…" : "تحلیل سناریو"}</button></div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-black">تحلیل‌های ذخیره‌شده</h2><div className="mt-4 space-y-2">{history.length ? history.slice(0, 8).map((item) => <button key={item.id} type="button" onClick={() => restoreAnalysis(item)} className="w-full rounded-xl bg-slate-50 p-3 text-right transition hover:bg-slate-100"><span className="block text-sm font-bold">{item.title}</span><span className="mt-1 block text-xs text-slate-500">{faNumber(item.estimate?.metrics?.personDays ?? 0)} نفر-روز · {faNumber(item.estimate?.metrics?.calendarWeeks ?? 0)} هفته</span></button>) : <p className="text-sm text-slate-500">هنوز تحلیلی ذخیره نشده است.</p>}</div></div>
-          </section>
+      <ScenarioCatalogSection selectedId={draft.catalogScenarioId} onSelect={applyScenario} />
+      <HermesSessionControls projects={projects} selectedProjectId={selectedProjectId} onProjectChange={setSelectedProjectId} status={sessionStatus} />
 
-          <section className="space-y-5 2xl:order-2"><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-xl font-black">دامنه‌های درگیر</h2><p className="mt-1 text-sm text-slate-500">دامنه‌های مبنا را انتخاب کنید؛ وابستگی‌های مستقیم خودکار به بوم اثر اضافه می‌شوند.</p></div><span className="text-xs font-bold text-slate-400">{selectedDomains.length} انتخاب‌شده</span></div><input value={domainSearch} onChange={(event) => setDomainSearch(event.target.value)} placeholder="جست‌وجوی دامنه…" className="mt-4 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-cyan-300" /><div className="mt-4 grid gap-3 md:grid-cols-2">{filteredGroups.flatMap((group) => group.domains).map((domain) => <button key={domain.id} type="button" onClick={() => toggleDomain(domain.id)} aria-pressed={selectedDomains.includes(domain.id)} className={`rounded-xl border p-3 text-right transition ${selectedDomains.includes(domain.id) ? "border-slate-950 bg-slate-950 text-white" : "border-slate-200 bg-white hover:border-cyan-400"}`}><div className="flex items-center justify-between gap-2"><span className="text-sm font-black">{domain.title}</span><span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${selectedDomains.includes(domain.id) ? "bg-white/15 text-cyan-200" : "bg-slate-100 text-slate-500"}`}>{domain.priority}</span></div><p className={`mt-1 text-xs leading-5 ${selectedDomains.includes(domain.id) ? "text-slate-300" : "text-slate-500"}`}>{domain.summary}</p></button>)}</div></div>{estimate ? <><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><article className="rounded-2xl border border-cyan-100 bg-cyan-50 p-4"><p className="text-xs font-bold text-cyan-800">زمان نفر-روز</p><p className="mt-2 text-2xl font-black text-cyan-950">{faNumber(estimate.metrics.personDays)}</p><p className="mt-1 text-xs text-cyan-800">پایه: {faNumber(estimate.metrics.basePersonDays)} · ذخیره: {estimate.assumptions.bufferPercent}٪</p></article><article className="rounded-2xl border border-violet-100 bg-violet-50 p-4"><p className="text-xs font-bold text-violet-800">زمان تقویمی</p><p className="mt-2 text-2xl font-black text-violet-950">{faNumber(estimate.metrics.calendarWeeks)} هفته</p><p className="mt-1 text-xs text-violet-800">{estimate.assumptions.teamCount} تیم × {estimate.assumptions.weeklyCapacity} نفر-روز در هفته</p></article><article className={`rounded-2xl border p-4 ${estimate.metrics.cost ? "border-emerald-100 bg-emerald-50" : "border-amber-100 bg-amber-50"}`}><p className="text-xs font-bold text-slate-700">هزینه تخمینی</p><p className="mt-2 text-lg font-black text-slate-950">{costLabel(estimate.metrics.cost)}</p><p className="mt-1 text-xs text-slate-600">بازهٔ ۱۵٪ بالا و پایین</p></article><article className="rounded-2xl border border-rose-100 bg-rose-50 p-4"><p className="text-xs font-bold text-rose-800">حجم تغییر</p><p className="mt-2 text-2xl font-black text-rose-950">{faNumber(estimate.changeVolume.taskCount)} کار</p><p className="mt-1 text-xs text-rose-800">{faNumber(estimate.changeVolume.domainCount)} دامنه · {faNumber(estimate.changeVolume.processCount)} فرایند</p></article></div>
-            <div className="grid gap-5 xl:grid-cols-2"><section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><h2 className="font-black">بوم اثر سناریو</h2><Badge tone={estimate.confidence === "high" ? "success" : estimate.confidence === "medium" ? "warning" : "danger"}>{statusLabels[estimate.confidence]}</Badge></div><div className="mt-4 space-y-2">{estimate.impactedDomains.map((domain) => <div key={domain.id} className={`flex items-center justify-between rounded-xl p-3 ${domain.selected ? "bg-slate-950 text-white" : "bg-slate-50"}`}><div><p className="text-sm font-bold">{domain.title}</p><p className={`mt-1 text-xs ${domain.selected ? "text-slate-300" : "text-slate-500"}`}>{domain.selected ? "دامنه مبنا" : "وابستگی مستقیم"} · پیچیدگی پایه {faNumber(domain.complexityDays)} روز</p></div><span className={`rounded-full px-2 py-1 text-[10px] font-black ${domain.priority === "P0" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"}`}>{domain.priority}</span></div>)}</div><p className="mt-4 text-xs leading-6 text-slate-500">{faNumber(estimate.relationships.length)} رابطهٔ مستقیم در این برآورد لحاظ شده است.</p></section><section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-black">فرایندهای تحت‌تأثیر</h2><div className="mt-4 flex flex-wrap gap-2">{estimate.processImpacts.map((process) => <span key={process.id} className="rounded-full bg-cyan-50 px-3 py-1.5 text-xs font-bold text-cyan-800">{process.title}</span>)}</div><div className="mt-5 grid grid-cols-2 gap-3 text-xs"><div className="rounded-xl bg-slate-50 p-3"><span className="text-slate-500">API/سطح سرویس</span><strong className="mt-1 block text-lg">{faNumber(estimate.changeVolume.apiSurfaceCount)}</strong></div><div className="rounded-xl bg-slate-50 p-3"><span className="text-slate-500">یکپارچه‌سازی</span><strong className="mt-1 block text-lg">{faNumber(estimate.changeVolume.integrationCount)}</strong></div><div className="rounded-xl bg-slate-50 p-3"><span className="text-slate-500">مهاجرت داده</span><strong className="mt-1 block text-lg">{faNumber(estimate.changeVolume.dataMigrationCount)}</strong></div><div className="rounded-xl bg-slate-50 p-3"><span className="text-slate-500">سطح UI</span><strong className="mt-1 block text-lg">{faNumber(estimate.changeVolume.uiSurfaceCount)}</strong></div></div></section></div>
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><h2 className="font-black">تقسیم چهار فاز</h2><span className="text-xs text-slate-400">همهٔ کارها باید از این چهار دروازه عبور کنند.</span></div><div className="mt-4 grid gap-3 sm:grid-cols-4">{estimate.phases.map((phase) => <div key={phase.id} className="rounded-xl bg-slate-50 p-3"><div className="flex items-center justify-between"><span className="text-sm font-bold">{phase.title}</span><span className="text-xs font-black text-cyan-700">{faNumber(phase.personDays)} روز</span></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200"><span className="block h-full rounded-full bg-cyan-500" style={{ width: `${phase.share * 100}%` }} /></div><p className="mt-2 text-xs text-slate-500">{faNumber(phase.share * 100)}٪ از effort</p></div>)}</div></section><div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-900"><p className="font-black">فرض‌ها و هشدارها</p><ul className="mt-2 list-disc space-y-1 pr-5">{estimate.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul></div></> : <div className="grid min-h-[560px] place-items-center rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center"><div><p className="text-xl font-black">سناریو آمادهٔ تحلیل است</p><p className="mt-2 max-w-md text-sm leading-7 text-slate-500">دامنه‌ها و فرض‌های سمت راست را تنظیم کنید و «تحلیل سناریو» را بزنید تا بوم اثر، زمان، هزینه و حجم تغییر ساخته شود.</p></div></div>}</section>
-
-          <section className="space-y-5 2xl:order-3"><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><div><h2 className="text-xl font-black">Hermes</h2><p className="mt-1 text-sm text-slate-500">تحلیل تصمیم بر اساس همین برآورد</p></div><Badge tone="info">مادر فرماندهی</Badge></div>{estimate ? <><textarea value={chatQuestion} onChange={(event) => setChatQuestion(event.target.value)} rows={4} className="mt-4 w-full resize-y rounded-xl border border-slate-200 px-3 py-2 text-sm leading-6 outline-none focus:ring-2 focus:ring-cyan-300" /><button type="button" onClick={() => void askHermes()} disabled={chatState === "loading"} className="mt-3 w-full rounded-xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800 disabled:opacity-50">{chatState === "loading" ? "Hermes در حال تحلیل…" : "ارسال سناریو به Hermes"}</button>{chatState === "blocked" && <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs leading-6 text-amber-900">Hermes در این محیط فعال نشده است؛ برآورد deterministic ذخیره شده و پس از تنظیم runtime می‌توان تحلیل متنی را اجرا کرد.</p>}{chatState === "failed" && <p className="mt-3 rounded-xl bg-rose-50 p-3 text-xs leading-6 text-rose-900">Hermes نتوانست پاسخ معتبر بدهد. این وضعیت به‌عنوان شکست اجرا پنهان نمی‌شود.</p>}{chatOutput && <div className="mt-4 rounded-xl border border-cyan-100 bg-cyan-50 p-4 text-sm leading-7 text-slate-800"><p className="mb-2 text-xs font-black text-cyan-800">پاسخ Hermes</p><p className="whitespace-pre-wrap">{chatOutput}</p></div>}</> : <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm leading-7 text-slate-500">ابتدا سناریو را تحلیل کنید تا Hermes عددها، دامنهٔ اثر و فرض‌ها را در زمینهٔ گفتگو داشته باشد.</p>}</div><div className="rounded-2xl border border-violet-100 bg-violet-50 p-5 text-sm leading-7 text-violet-950"><p className="font-black">قرارداد تصمیم</p><p className="mt-2">Hermes پیشنهاد می‌دهد؛ تغییر واقعی در کار، سیاست یا فرایند فقط پس از تأیید ثبت‌شدهٔ مدیرعامل انجام می‌شود.</p></div></section>
+      <div className="grid items-start gap-6 2xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="space-y-5">
+          <ScenarioAssumptionsForm value={draft} projects={projects} teams={teams} submitting={analyzing} onChange={updateDraft} onAnalyze={() => void analyze()} />
+          {estimate && <EstimateSummary estimate={estimate} />}
         </div>
-        {chatProposal && <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-black text-emerald-700">proposal ثبت شد</p><h2 className="mt-1 text-lg font-black text-emerald-950">{chatProposal.title}</h2><p className="mt-2 text-sm leading-7 text-emerald-900">این پیشنهاد هنوز task نیست و تا تأیید مدیرعامل تغییری در پروژه ایجاد نمی‌کند.</p></div><Link href="/ceo/proposals" className="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-black text-white hover:bg-emerald-800">بررسی در اتاق مدیرعامل ←</Link></div></section>}
+
+        <aside className="space-y-5">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between gap-3"><div><h2 className="text-xl font-black">تحلیل‌های ذخیره‌شده</h2><p className="mt-1 text-xs text-slate-500">تاریخچهٔ مجاز این نشست</p></div><Badge tone="neutral">{numberFormat.format(history.length)}</Badge></div><div className="mt-4 space-y-2">{historyLoading ? <p className="text-sm text-slate-500">در حال دریافت تاریخچه…</p> : history.length ? history.slice(0, 10).map((item) => {
+            const versioned = isScenarioEstimate(item.estimate);
+            return <button key={item.id} type="button" onClick={() => restoreAnalysis(item)} className="w-full rounded-xl border border-transparent bg-slate-50 p-3 text-right transition hover:border-cyan-200 hover:bg-cyan-50"><span className="block text-sm font-bold">{item.title}</span><span className="mt-1 block text-[11px] text-slate-500">{new Date(item.createdAt).toLocaleDateString("fa-IR")} · {versioned ? "نسخه‌دار" : "سابقهٔ قدیمی"}{item.createdBy?.displayName ? ` · ${item.createdBy.displayName}` : ""}</span></button>;
+          }) : <p className="text-sm leading-6 text-slate-500">هنوز تحلیلی ذخیره نشده است.</p>}</div></section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between gap-3"><div><h2 className="text-xl font-black">گفت‌وگو با Hermes</h2><p className="mt-1 text-sm text-slate-500">تفسیر و برنامه‌ریزی بر پایهٔ این تحلیل ذخیره‌شده</p></div><Badge tone="info">مادر فرماندهی</Badge></div>{estimate ? <><textarea aria-label="پرسش از Hermes" value={chatQuestion} onChange={(event) => setChatQuestion(event.target.value)} rows={4} className="mt-4 w-full resize-y rounded-xl border border-slate-200 px-3 py-2 text-sm leading-6 outline-none focus:ring-2 focus:ring-cyan-300" /><button type="button" onClick={() => void askHermes()} disabled={chatState === "loading" || !currentAnalysisId} className="mt-3 w-full rounded-xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">{chatState === "loading" ? "Hermes در حال تحلیل…" : "ارسال تحلیل ذخیره‌شده به Hermes"}</button>{!currentAnalysisId && <p className="mt-2 text-xs text-amber-800">برای گفت‌وگو، ابتدا یک تحلیل نسخه‌دار ذخیره کنید.</p>}{chatState === "blocked" && <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs leading-6 text-amber-900">Hermes در این محیط فعال نشده است؛ برآورد نسخه‌دار ذخیره شده و پس از تنظیم runtime می‌توان تحلیل متنی را اجرا کرد.</p>}{chatState === "failed" && <p className="mt-3 rounded-xl bg-rose-50 p-3 text-xs leading-6 text-rose-900">Hermes نتوانست پاسخ معتبر بدهد. این وضعیت به‌عنوان شکست اجرا پنهان نمی‌شود.</p>}{chatOutput && <div className="mt-4 rounded-xl border border-cyan-100 bg-cyan-50 p-4 text-sm leading-7 text-slate-800"><p className="mb-2 text-xs font-black text-cyan-800">پاسخ Hermes</p><p className="whitespace-pre-wrap">{chatOutput}</p></div>}</> : <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm leading-7 text-slate-500">ابتدا سناریو را تحلیل و ذخیره کنید تا Hermes فقط به خروجی ثبت‌شده دسترسی داشته باشد.</p>}</section>
+
+          <div className="rounded-2xl border border-violet-100 bg-violet-50 p-5 text-sm leading-7 text-violet-950"><p className="font-black">قرارداد تصمیم</p><p className="mt-2">Hermes پیشنهاد می‌دهد؛ تغییر واقعی در کار، سیاست یا فرایند فقط پس از تأیید ثبت‌شدهٔ مدیرعامل انجام می‌شود.</p></div>
+        </aside>
       </div>
-    </main>
-  );
+
+      {chatProposal && <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-black text-emerald-700">پیشنهاد ثبت شد</p><h2 className="mt-1 text-lg font-black text-emerald-950">{chatProposal.title}</h2><p className="mt-2 text-sm leading-7 text-emerald-900">این پیشنهاد هنوز task نیست و تا تأیید مدیرعامل تغییری در پروژه ایجاد نمی‌کند.</p></div><Link href="/ceo/proposals" className="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-black text-white hover:bg-emerald-800">بررسی در اتاق مدیرعامل ←</Link></div></section>}
+    </div>
+  </main>;
 }
