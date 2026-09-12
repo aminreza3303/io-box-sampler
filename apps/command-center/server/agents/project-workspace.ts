@@ -18,7 +18,7 @@ function isWithin(candidate: string, root: string) {
   return resolvedCandidate === resolvedRoot || resolvedCandidate.startsWith(`${resolvedRoot}${path.sep}`);
 }
 
-export async function resolveProjectWorkspace(project: { code: string }, environment: NodeJS.ProcessEnv = process.env, cwd = process.cwd()): Promise<WorkspaceResolution> {
+export async function resolveProjectWorkspace(project: { code: string }, environment: Readonly<Record<string, string | undefined>> = process.env, cwd = process.cwd()): Promise<WorkspaceResolution> {
   const key = project.code.trim().toLowerCase();
   if (!/^[a-z0-9-]+$/.test(key)) return { key, error: "کد پروژه برای workspace معتبر نیست." };
 
