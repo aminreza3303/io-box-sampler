@@ -86,3 +86,59 @@ Test Files  2 passed (2)
 - اندازه‌گیری KPI فقط هنگام وجود `actual` عددی و `operator` انجام می‌شود.
 - history legacy فقط render می‌شود و هیچ مسیر ذخیره یا بازتحلیل خودکاری ندارد.
 - فقط هفت مسیر Task 6 بالا در commit پیاده‌سازی ثبت شده‌اند؛ تغییر قبلی task-5 report و plan کاربر خارج از index و commit باقی ماندند.
+
+## Fix Round 1 — یافته‌های بازبینی مستقل
+
+Commit اصلاح کد: `386e684821d0c58096bfd65c92c8a83b30c2033b`. تقویت regression test برای سه envelope متوالی نیز در `520ec49b7ba8904070c335925551bb9c20c68428` ثبت شد. مبنای گزارش قبلی: `c17868112096fb698ac33309f314225d446eeb23`.
+
+۱. **تصمیم‌های CEO تکراری:** `unwrapScenarioAssumptions` حالا زنجیرهٔ envelopeهای `sourceAssumptions` را تا ورودی اصلی دنبال می‌کند و در برابر چرخه/دادهٔ malformed متوقف می‌شود. planner، رندر provenance و context builder از همین helper استفاده می‌کنند؛ بنابراین تصمیم‌های پشت‌سرهم ورودی‌ها را از restore یا Hermes پنهان نمی‌کنند.
+
+۲. **operator نامعتبر KPI:** ارزیابی نمایشی به helper خالص `evaluateKpiActual` منتقل شد. فقط `actual` و `target` عددی به‌همراه operator دقیق `gte` یا `lte` نتیجه می‌دهند؛ operator ناشناخته، null یا target/actual ناقص وضعیت `unmeasured` دارد.
+
+۳. **فرض‌های حذف‌شده از context:** whitelist assumptions و estimate اکنون effort overrideها (مقدار effort و evidence)، money conversionها (مقادیر اصلی/تبدیل‌شده، نرخ، تاریخ و منبع) و catalog metadata/source references را شامل می‌شود. provenance همین ورودی‌ها نیز با source labels حفظ می‌شود؛ ناشناخته‌ها همچنان حذف می‌شوند.
+
+۴. **نام ورودی‌های ناقص در fallback حجیم:** مسیر compact و آخرین fallback هر دو نام missing inputها را از `evidenceCompleteness.missingFields` نگه می‌دارند. regression test ورودی whitelisted بزرگ را تا fallback واقعی می‌برد و حفظ نام‌ها و JSON معتبر زیر ۱۲٬۰۰۰ کاراکتر را assert می‌کند.
+
+### فایل‌های fix round
+
+- `apps/command-center/lib/scenario-restore.ts`
+- `apps/command-center/lib/scenario-kpi-display.ts`
+- `apps/command-center/components/scenarios/scenario-planner-page.tsx`
+- `apps/command-center/components/scenarios/scenario-business-case-panel.tsx`
+- `apps/command-center/server/domain/scenario-hermes-context.ts`
+- `apps/command-center/tests/domain/scenario-restore.test.ts`
+- `apps/command-center/tests/domain/scenario-business-case-panel.test.ts`
+- `apps/command-center/tests/domain/scenario-hermes-context.test.ts`
+
+### focused verification این fix round
+
+فرمان دقیق:
+
+```text
+npm test -- tests/domain/scenario-hermes-context.test.ts tests/domain/scenario-business-case-panel.test.ts tests/domain/scenario-restore.test.ts tests/auth/scenario-decision-api.test.ts tests/auth/scenario-hermes-chat-contract.test.ts tests/domain/proposal-service.test.ts
+```
+
+خروجی دقیق:
+
+```text
+> command-center@0.1.0 test
+> vitest run tests/domain/scenario-hermes-context.test.ts tests/domain/scenario-business-case-panel.test.ts tests/domain/scenario-restore.test.ts tests/auth/scenario-decision-api.test.ts tests/auth/scenario-hermes-chat-contract.test.ts tests/domain/proposal-service.test.ts
+
+ RUN  v3.2.4 C:/Users/a.sedabadi/Documents/newcash-scenario-business-case/apps/command-center
+
+ ✓ tests/domain/scenario-hermes-context.test.ts (5 tests) 15ms
+ ✓ tests/domain/scenario-business-case-panel.test.ts (4 tests) 22ms
+ ✓ tests/domain/proposal-service.test.ts (4 tests) 25ms
+ ✓ tests/auth/scenario-hermes-chat-contract.test.ts (2 tests) 17ms
+ ✓ tests/auth/scenario-decision-api.test.ts (5 tests) 26ms
+ ✓ tests/domain/scenario-restore.test.ts (3 tests) 5ms
+
+ Test Files  6 passed (6)
+      Tests  23 passed (23)
+   Start at  13:22:07
+   Duration  1.20s (transform 536ms, setup 0ms, collect 1.69s, tests 109ms, environment 1ms, prepare 1.14s)
+```
+
+`npx tsc --noEmit` پس از fix نیز اجرا شد. از فایل‌های این fix خطایی باقی نماند؛ تنها همان چهار خطای baseline در `tests/agents/project-workspace.test.ts` (fixture فاقد `NODE_ENV`) گزارش شد. `git diff --check` هم بدون خطا بود.
+
+این گزارش در commit مستندات جداگانه ثبت می‌شود. گزارش Task 5 و plan کپی‌شدهٔ کاربر همچنان خارج از stage و commit باقی می‌مانند.
