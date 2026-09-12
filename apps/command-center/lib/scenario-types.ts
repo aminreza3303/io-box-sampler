@@ -61,6 +61,7 @@ export type ScenarioCaseInput = {
   benefitDrivers: ScenarioBenefitDriver[];
   moneyConversions: Array<{
     field: "personDayRate" | "oneTimeExternalCost" | "monthlyOperatingCost" | "benefitNetContribution";
+    benefitDriverId?: string;
     originalCurrency: string;
     originalAmount: number;
     convertedAmount: number;
