@@ -125,4 +125,20 @@ describe("CEO scenario decision endpoint", () => {
     expect((await post({ ...decision, decision: "approve" })).status).toBe(400);
     expect(mocks.findSource).not.toHaveBeenCalled();
   });
+
+  it("returns a stable 400 for malformed JSON without reading or writing a snapshot", async () => {
+    const response = await recordScenarioDecision(
+      new Request("http://localhost/api/scenarios/analysis-source/decision", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{",
+      }),
+      { params: Promise.resolve({ id: "analysis-source" }) },
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "بدنهٔ درخواست معتبر نیست." });
+    expect(mocks.findSource).not.toHaveBeenCalled();
+    expect(mocks.transaction).not.toHaveBeenCalled();
+  });
 });

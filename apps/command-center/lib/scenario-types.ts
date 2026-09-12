@@ -42,6 +42,24 @@ export type ScenarioBenefitDriver = {
   source: ScenarioEvidence | null;
 };
 
+type ScenarioMoneyConversionCommon = {
+  originalCurrency: string;
+  originalAmount: number;
+  convertedAmount: number;
+  rate: number;
+  rateDate: string;
+  source: string;
+};
+
+export type ScenarioMoneyConversion =
+  | (ScenarioMoneyConversionCommon & {
+    field: "personDayRate" | "oneTimeExternalCost" | "monthlyOperatingCost";
+  })
+  | (ScenarioMoneyConversionCommon & {
+    field: "benefitNetContribution";
+    benefitDriverId: string;
+  });
+
 export type ScenarioCaseInput = {
   id: "conservative" | "base" | "optimistic" | string;
   name: string;
@@ -59,16 +77,7 @@ export type ScenarioCaseInput = {
   oneTimeExternalCost: number | null;
   monthlyOperatingCost: number | null;
   benefitDrivers: ScenarioBenefitDriver[];
-  moneyConversions: Array<{
-    field: "personDayRate" | "oneTimeExternalCost" | "monthlyOperatingCost" | "benefitNetContribution";
-    benefitDriverId?: string;
-    originalCurrency: string;
-    originalAmount: number;
-    convertedAmount: number;
-    rate: number;
-    rateDate: string;
-    source: string;
-  }>;
+  moneyConversions: ScenarioMoneyConversion[];
 };
 
 export type ScenarioPhaseShares = {

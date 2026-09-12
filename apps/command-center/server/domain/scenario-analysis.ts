@@ -268,6 +268,14 @@ const scenarioRequestSchema = z.object({
     context.addIssue({ code: "custom", path: ["fieldEvidence"], message: "منشأ شناسهٔ کاتالوگ باید با وجود همان شناسه سازگار باشد." });
   }
 
+  if (request.gateDecision.decision !== null) {
+    context.addIssue({
+      code: "custom",
+      path: ["gateDecision", "decision"],
+      message: "ثبت تصمیم فقط از مسیر اختصاصی مدیرعامل مجاز است.",
+    });
+  }
+
   request.cases.forEach((scenarioCase, caseIndex) => {
     scenarioCase.benefitDrivers.forEach((driver, driverIndex) => {
       if (driver.startMonth !== null && driver.startMonth > request.horizonMonths) {

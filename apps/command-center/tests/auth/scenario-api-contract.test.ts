@@ -181,7 +181,7 @@ describe("scenario API contract", () => {
     expect(() => parseScenarioRequest({ ...request, kpis: [{ ...request.kpis[0], actualAt: "yesterday" }] })).toThrow();
   });
 
-  it("validates an actual gate decision and milestone review dates without treating dates as gate passage", () => {
+  it("rejects a recorded gate decision from an analysis request while still validating milestone dates", () => {
     const request = scenarioRequest();
     const decided = {
       ...request,
@@ -204,7 +204,7 @@ describe("scenario API contract", () => {
         reviewDate: "2026-10-01",
       }],
     };
-    expect(() => parseScenarioRequest(decided)).not.toThrow();
+    expect(() => parseScenarioRequest(decided)).toThrow();
     expect(() => parseScenarioRequest({
       ...decided,
       gateDecision: { ...decided.gateDecision, evidence: " " },
@@ -315,6 +315,28 @@ describe("scenario API contract", () => {
       targetId: "analysis-1",
       metadata: expect.objectContaining({ modelVersion: "scenario-business-case/v1", caseCount: 3 }),
     }));
+  });
+
+  it("rejects a recorded gate decision before creating an analysis or audit event", async () => {
+    const request = {
+      ...scenarioRequest(),
+      gateDecision: {
+        decision: "continue" as const,
+        reason: "پایلوت محدود ادامه یابد",
+        evidence: "نتیجهٔ پایلوت ثبت شد",
+        owner: "مدیرعامل",
+        reviewDate: "2026-10-01",
+      },
+    };
+    const response = await analyzeScenario(new Request("http://localhost/api/scenarios/analyze", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(request),
+    }));
+
+    expect(response.status).toBe(400);
+    expect(routeMocks.createAnalysis).not.toHaveBeenCalled();
+    expect(routeMocks.recordAuditEvent).not.toHaveBeenCalled();
   });
 
   it("rejects unknown catalog cards and project/team IDs outside the actor's scope", async () => {

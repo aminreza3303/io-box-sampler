@@ -18,7 +18,13 @@ export async function POST(request: Request, context: RouteContext) {
 
     const { id: sourceAnalysisId } = await context.params;
     if (!sourceAnalysisId.trim()) return NextResponse.json({ error: "شناسهٔ تحلیل معتبر نیست." }, { status: 400 });
-    const decision = parseScenarioDecision(await request.json());
+    let payload: unknown;
+    try {
+      payload = await request.json();
+    } catch {
+      return NextResponse.json({ error: "بدنهٔ درخواست معتبر نیست." }, { status: 400 });
+    }
+    const decision = parseScenarioDecision(payload);
     const source = await prisma.scenarioAnalysis.findUnique({ where: { id: sourceAnalysisId } });
     if (!source) return NextResponse.json({ error: "تحلیل موردنظر پیدا نشد." }, { status: 404 });
 
