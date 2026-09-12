@@ -103,7 +103,6 @@ export const scenarioTemplates: Array<{ id: string; title: string; description: 
   { id: "merchant-offer", title: "پرداخت QR و پیشنهاد پذیرنده", description: "اثر پرداخت پذیرنده و موتور پیشنهاد را مقایسه کن.", domainIds: ["qr", "special-offer"] },
   { id: "kyc-card", title: "ارتقای KYC و صدور کارت", description: "مسیر هویت، کیف، پالیسی و کارت را برآورد کن.", domainIds: ["kyc", "card"] },
   { id: "mobile-rewrite", title: "بازنویسی موبایل", description: "بازنویسی کلاینت را همراه چندزبانه و سیستم دیزاین بررسی کن.", domainIds: ["mobile", "redesign", "i18n"] },
-  { id: "gold-launch", title: "افزودن محصول طلا", description: "ارزش‌گذاری، دفترکل، نرخ و کنترل معامله را تحلیل کن.", domainIds: ["gold"] },
 ];
 
 const phaseShares = [
