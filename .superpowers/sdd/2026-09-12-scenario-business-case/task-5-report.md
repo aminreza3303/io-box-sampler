@@ -1,6 +1,6 @@
 # Task 5 implementation report
 
-Status: DONE_WITH_CONCERNS — implementation and automated verification are complete; authenticated browser smoke is still pending because the local app redirects to login and needs the user to sign in manually.
+Status: DONE_WITH_CONCERNS — implementation and automated verification are complete; authenticated browser smoke is pending only until the user signs in manually.
 
 ## Changes
 
@@ -14,7 +14,8 @@ Status: DONE_WITH_CONCERNS — implementation and automated verification are com
 - `npx vitest run tests/domain/scenario-catalog.test.ts tests/domain/scenario-planner.test.ts tests/domain/scenario-business-case.test.ts tests/auth/scenario-api-contract.test.ts tests/auth/scenario-decision-api.test.ts` — 5 files, 68 tests passed.
 - `$env:DATABASE_URL='postgresql://postgres:postgres@127.0.0.1:5432/newcash_test'; npm run build` — passed, including Next.js type checking and static page generation. The URL is a process-local placeholder; no live DB was used. Next.js emitted its existing workspace-root warning because both repository and app lockfiles are present.
 - `git diff --check` — passed; Git emitted only line-ending normalization warnings for the modified page.
-- Browser smoke is pending: localhost and LAN requests reach port 3001 and redirect to `/login?next=%2Fscenarios`, but a read-only check found no PostgreSQL listener on `127.0.0.1:5432` and the Docker CLI is unavailable. No authentication was automated or bypassed. Verify the 13 interactive cards, authorized rosters, RTL/responsive layout, and console once a local database is available and the user signs in manually.
+- Local development database is now ready using PGlite 0.5.8 with its PostgreSQL-wire socket adapter on `127.0.0.1:5432`; all Prisma migrations and the demo seed completed successfully. This is a local testing adapter, not a replacement for the PostgreSQL 16 service in Docker Compose/production.
+- The development app is live on port 3001 and bound to `192.168.1.61`: `http://localhost:3001` and `http://192.168.1.61:3001`. Login responds with HTTP 200; protected scenario routes redirect to login as expected. No authentication was automated or bypassed. After the user signs in manually, verify the 13 interactive cards, authorized rosters, RTL/responsive layout, and console.
 
 ## Review context
 
