@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { ScenarioEstimate, ScenarioRequestDraft, StrategicScenario } from "../../lib/scenario-types";
+import type { ScenarioEstimate, ScenarioGateDecision, ScenarioRequestDraft, StrategicScenario } from "../../lib/scenario-types";
 import { restrictScenarioDraftToRoster } from "../../lib/scenario-restore";
 import { Badge } from "../ui/badge";
 import { ScenarioAssumptionsForm, createScenarioRequestDraft } from "./scenario-assumptions-form";
 import { ScenarioCatalogSection } from "./scenario-catalog-section";
+import { ScenarioBusinessCasePanel } from "./scenario-business-case-panel";
 
 type Project = { id: string; name: string; code?: string };
 type Team = { id: string; name: string; project?: { name: string } | null };
@@ -37,14 +38,6 @@ type ChatPayload = {
 };
 
 const numberFormat = new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 1 });
-const currencyLabels = { TOMAN: "تومان", USD: "دلار", IQD: "دینار" } as const;
-
-function formatNumber(value: number | null | undefined, unit = "") {
-  return value === null || value === undefined || !Number.isFinite(value)
-    ? "دادهٔ کافی ثبت نشده"
-    : `${numberFormat.format(value)}${unit ? ` ${unit}` : ""}`;
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -94,29 +87,6 @@ function HermesSessionControls({ projects, selectedProjectId, onProjectChange, s
   </section>;
 }
 
-function EstimateSummary({ estimate }: { estimate: ScenarioEstimate }) {
-  return <section className="space-y-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div><p className="text-xs font-black text-emerald-800">تحلیل نسخه‌دار ذخیره شد</p><h2 className="mt-1 text-xl font-black text-emerald-950">{estimate.title}</h2><p className="mt-2 text-xs leading-6 text-emerald-900">مقادیر زیر مستقیماً از خروجی محاسبهٔ سرور خوانده شده‌اند؛ مورد نامشخص به‌عنوان صفر نمایش داده نمی‌شود.</p></div>
-      <Badge tone="success">{estimate.modelVersion}</Badge>
-    </div>
-    <div className="grid gap-3 lg:grid-cols-3">{estimate.cases.map((scenarioCase) => <article key={scenarioCase.caseId} className="rounded-xl border border-emerald-100 bg-white p-4">
-      <h3 className="font-black">{scenarioCase.name}</h3>
-      <dl className="mt-3 space-y-2 text-xs">
-        <div className="flex justify-between gap-2"><dt className="text-slate-500">تلاش فنی</dt><dd className="font-bold">{formatNumber(scenarioCase.technical.metrics.personDays, "نفر-روز")}</dd></div>
-        <div className="flex justify-between gap-2"><dt className="text-slate-500">زمان تقویمی تخمینی</dt><dd className="font-bold">{formatNumber(scenarioCase.technical.metrics.calendarWeeks, "هفته")}</dd></div>
-        <div className="flex justify-between gap-2"><dt className="text-slate-500">سرمایه‌گذاری اولیه</dt><dd className="font-bold">{formatNumber(scenarioCase.financial.initialInvestment, currencyLabels[scenarioCase.financial.currency])}</dd></div>
-        <div className="flex justify-between gap-2"><dt className="text-slate-500">ارزش خالص</dt><dd className="font-bold">{formatNumber(scenarioCase.financial.netValue, currencyLabels[scenarioCase.financial.currency])}</dd></div>
-        <div className="flex justify-between gap-2"><dt className="text-slate-500">ROI</dt><dd className="font-bold">{formatNumber(scenarioCase.financial.roiPercent, "٪")}</dd></div>
-        <div className="flex justify-between gap-2"><dt className="text-slate-500">بازگشت سرمایه</dt><dd className="font-bold">{formatNumber(scenarioCase.financial.paybackMonths, "ماه")}</dd></div>
-      </dl>
-      {!!scenarioCase.financial.missingInputs.length && <p className="mt-3 rounded-lg bg-amber-50 p-2 text-[11px] leading-5 text-amber-900">ورودی‌های ناقص: {scenarioCase.financial.missingInputs.join("، ")}</p>}
-    </article>)}</div>
-    <div className="grid gap-3 sm:grid-cols-2"><div className="rounded-xl bg-white p-3 text-xs"><span className="text-slate-500">کامل‌بودن منشأ داده‌ها</span><p className="mt-1 font-black">{numberFormat.format(estimate.evidenceCompleteness.recorded)} ثبت‌شده · {numberFormat.format(estimate.evidenceCompleteness.missing)} نیازمند تکمیل</p></div><div className="rounded-xl bg-white p-3 text-xs"><span className="text-slate-500">خروجی با چه محدودیت‌هایی تفسیر شود؟</span><p className="mt-1 leading-5">{estimate.limitations.length ? estimate.limitations.join(" · ") : "محدودیتی از سوی محاسبه‌گر ثبت نشده است."}</p></div></div>
-    {!!estimate.warnings.length && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-6 text-amber-950"><p className="font-black">هشدارهای برآورد فنی</p><ul className="mt-1 list-disc space-y-1 pr-4">{estimate.warnings.map((warning, index) => <li key={`${index}-${warning}`}>{warning}</li>)}</ul></div>}
-  </section>;
-}
-
 export function ScenarioPlannerPage() {
   const [draft, setDraft] = useState<ScenarioRequestDraft>(() => createScenarioRequestDraft());
   const [projects, setProjects] = useState<Project[]>([]);
@@ -124,6 +94,8 @@ export function ScenarioPlannerPage() {
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [sessionStatus, setSessionStatus] = useState<SessionStatus | null>(null);
   const [estimate, setEstimate] = useState<ScenarioEstimate | null>(null);
+  const [legacyEstimate, setLegacyEstimate] = useState<unknown>(null);
+  const [resultAssumptions, setResultAssumptions] = useState<unknown>(null);
   const [currentAnalysisId, setCurrentAnalysisId] = useState<string | null>(null);
   const [history, setHistory] = useState<SavedAnalysis[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -191,6 +163,8 @@ export function ScenarioPlannerPage() {
   function updateDraft(next: ScenarioRequestDraft) {
     setDraft(next);
     setEstimate(null);
+    setLegacyEstimate(null);
+    setResultAssumptions(null);
     setCurrentAnalysisId(null);
     setChatOutput("");
     setChatProposal(null);
@@ -203,6 +177,8 @@ export function ScenarioPlannerPage() {
       teamIds: current.teamIds ?? [],
     }));
     setEstimate(null);
+    setLegacyEstimate(null);
+    setResultAssumptions(null);
     setCurrentAnalysisId(null);
     setChatOutput("");
     setChatProposal(null);
@@ -220,9 +196,11 @@ export function ScenarioPlannerPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(draft),
       });
-      const payload = await response.json() as { analysis?: { id?: string }; estimate?: unknown; error?: string };
+      const payload = await response.json() as { analysis?: { id?: string; assumptions?: unknown }; estimate?: unknown; error?: string };
       if (!response.ok || !isScenarioEstimate(payload.estimate)) throw new Error(payload.error ?? "تحلیل سناریو ناموفق بود.");
       setEstimate(payload.estimate);
+      setLegacyEstimate(null);
+      setResultAssumptions(payload.analysis?.assumptions ?? draft);
       setCurrentAnalysisId(payload.analysis?.id ?? null);
       await loadHistory();
     } catch (reason) {
@@ -245,8 +223,7 @@ export function ScenarioPlannerPage() {
         body: JSON.stringify({
           message: chatQuestion.trim(),
           projectId: selectedProjectId || undefined,
-          context: `سناریو: ${estimate.title}\nحالت‌ها: ${estimate.cases.map((scenarioCase) => scenarioCase.name).join("، ")}`,
-          scenarioContext: estimate,
+          scenarioAnalysisId: currentAnalysisId,
         }),
       });
       const payload = await response.json() as ChatPayload;
@@ -286,11 +263,33 @@ export function ScenarioPlannerPage() {
     setDraft(restrictScenarioDraftToRoster(restoredDraft, projects.map(({ id }) => id), teams.map(({ id }) => id)));
     const savedEstimate = isScenarioEstimate(item.estimate) ? item.estimate : null;
     setEstimate(savedEstimate);
+    setLegacyEstimate(savedEstimate ? null : item.estimate ?? null);
+    setResultAssumptions(item.assumptions);
     setCurrentAnalysisId(savedEstimate ? item.id : null);
     setChatOutput("");
     setChatProposal(null);
     setChatState("idle");
     setError(savedEstimate ? "" : "این تحلیل قدیمی است؛ اطلاعات اصلی بازیابی شد. برای دیدن برآورد نسخه‌دار، دوباره تحلیل را اجرا کنید.");
+  }
+
+  async function saveDecision(decision: ScenarioGateDecision) {
+    if (!currentAnalysisId) throw new Error("شناسهٔ snapshot نسخه‌دار پیدا نشد.");
+    const response = await fetch(`/api/scenarios/${encodeURIComponent(currentAnalysisId)}/decision`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(decision),
+    });
+    const payload = await response.json() as { analysis?: { id?: string; estimate?: unknown; assumptions?: unknown }; error?: string };
+    if (!response.ok || !payload.analysis?.id || !isScenarioEstimate(payload.analysis.estimate)) {
+      throw new Error(payload.error ?? "ثبت تصمیم مدیرعامل ناموفق بود.");
+    }
+    setEstimate(payload.analysis.estimate);
+    setLegacyEstimate(null);
+    setCurrentAnalysisId(payload.analysis.id);
+    setResultAssumptions(payload.analysis.assumptions);
+    setChatOutput("");
+    setChatProposal(null);
+    await loadHistory();
   }
 
   return <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900 sm:px-8" dir="rtl">
@@ -307,7 +306,7 @@ export function ScenarioPlannerPage() {
       <div className="grid items-start gap-6 2xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-5">
           <ScenarioAssumptionsForm value={draft} projects={projects} teams={teams} submitting={analyzing} onChange={updateDraft} onAnalyze={() => void analyze()} />
-          {estimate && <EstimateSummary estimate={estimate} />}
+          {(estimate || legacyEstimate !== null) && <ScenarioBusinessCasePanel key={currentAnalysisId ?? "legacy"} estimate={estimate ?? legacyEstimate} assumptions={resultAssumptions} onDecisionChange={saveDecision} />}
         </div>
 
         <aside className="space-y-5">
