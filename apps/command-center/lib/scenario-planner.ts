@@ -1,52 +1,16 @@
 import { domainRelationships, domains, getDomainById, type DomainGroupId, type DomainRelationship } from "./domain-map";
 import { getProcessById, type ProcessDefinition } from "./workspaces";
+import type { ScenarioPlannerInput, TechnicalEstimate } from "./scenario-types";
 
-export type ScenarioAssumptions = {
-  teamCount?: number;
-  weeklyCapacity?: number;
-  personDayRate?: number | null;
-  bufferPercent?: number;
+export type { ScenarioPlannerInput, TechnicalEstimate } from "./scenario-types";
+
+type DomainEffort = {
+  personDays: number;
+  apiSurfaces: number;
+  integrations: number;
+  dataMigrations: number;
+  uiSurfaces: number;
 };
-
-export type ScenarioInput = {
-  title: string;
-  description?: string;
-  domainIds: string[];
-  assumptions?: ScenarioAssumptions;
-};
-
-export type ScenarioEstimate = {
-  title: string;
-  description: string;
-  selectedDomainIds: string[];
-  impactedDomains: Array<{ id: string; title: string; group: DomainGroupId; priority: string; selected: boolean; status: string; complexityDays: number }>;
-  relationships: DomainRelationship[];
-  processImpacts: ProcessDefinition[];
-  assumptions: Required<ScenarioAssumptions> & { impactDepth: number };
-  metrics: {
-    basePersonDays: number;
-    personDays: number;
-    calendarWeeks: number;
-    cost: { low: number; high: number; currency: "تومان" } | null;
-  };
-  changeVolume: {
-    domainCount: number;
-    selectedDomainCount: number;
-    relationshipCount: number;
-    processCount: number;
-    apiSurfaceCount: number;
-    integrationCount: number;
-    dataMigrationCount: number;
-    uiSurfaceCount: number;
-    taskCount: number;
-    phaseCount: 4;
-  };
-  phases: Array<{ id: "product" | "design" | "development" | "delivery"; title: string; personDays: number; share: number }>;
-  confidence: "low" | "medium" | "high";
-  warnings: string[];
-};
-
-type DomainEffort = { personDays: number; apiSurfaces: number; integrations: number; dataMigrations: number; uiSurfaces: number };
 
 const groupDefaults: Record<DomainGroupId, DomainEffort> = {
   infra: { personDays: 5, apiSurfaces: 3, integrations: 1, dataMigrations: 1, uiSurfaces: 1 },
@@ -105,98 +69,206 @@ export const scenarioTemplates: Array<{ id: string; title: string; description: 
   { id: "mobile-rewrite", title: "بازنویسی موبایل", description: "بازنویسی کلاینت را همراه چندزبانه و سیستم دیزاین بررسی کن.", domainIds: ["mobile", "redesign", "i18n"] },
 ];
 
-const phaseShares = [
-  { id: "product" as const, title: "محصول", share: 0.15 },
-  { id: "design" as const, title: "طراحی", share: 0.2 },
-  { id: "development" as const, title: "توسعه", share: 0.45 },
-  { id: "delivery" as const, title: "تحویل", share: 0.2 },
+const phaseDefinitions = [
+  { id: "product" as const, title: "محصول", shareKey: "product" as const },
+  { id: "design" as const, title: "طراحی", shareKey: "design" as const },
+  { id: "development" as const, title: "توسعه", shareKey: "development" as const },
+  { id: "delivery" as const, title: "تحویل", shareKey: "delivery" as const },
 ];
 
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
+function roundTenth(value: number): number {
+  if (!Number.isFinite(value)) throw new Error("مقدار نفر-روز خارج از محدودهٔ محاسبه است.");
+  const rounded = Math.round((value + Number.EPSILON) * 10) / 10;
+  if (!Number.isFinite(rounded)) throw new Error("مقدار نفر-روز خارج از محدودهٔ محاسبه است.");
+  return rounded;
 }
 
-function round(value: number) {
-  return Math.round(value * 10) / 10;
+function validatePlannerInput(input: ScenarioPlannerInput): string[] {
+  if (!input.title.trim()) throw new Error("عنوان سناریو الزامی است.");
+  if (!Array.isArray(input.domainIds) || input.domainIds.length === 0) throw new Error("حداقل یک دامنه برای سناریو انتخاب کنید.");
+  const invalidDomains = [...new Set(input.domainIds)].filter((id) => !getDomainById(id));
+  if (invalidDomains.length > 0) throw new Error(`دامنهٔ نامعتبر: ${invalidDomains.join("، ")}`);
+  if (!["selected", "direct", "transitive"].includes(input.impactDepth)) throw new Error("عمق اثر سناریو معتبر نیست.");
+  if (!Number.isFinite(input.effortAdjustmentPercent) || input.effortAdjustmentPercent < -100 || input.effortAdjustmentPercent > 500) {
+    throw new Error("تغییر effort باید بین ۱۰۰- تا ۵۰۰ درصد باشد.");
+  }
+  if (!Number.isFinite(input.riskReservePercent) || input.riskReservePercent < 0 || input.riskReservePercent > 100) {
+    throw new Error("ذخیرهٔ ریسک باید بین صفر تا ۱۰۰ درصد باشد.");
+  }
+  for (const [name, value] of [["تعداد تیم", input.teamCount], ["ظرفیت هفتگی", input.weeklyCapacityPerTeam]] as const) {
+    if (value !== null && (!Number.isFinite(value) || value <= 0)) throw new Error(`${name} باید عددی مثبت و معتبر باشد.`);
+  }
+  if (input.teamCount !== null && (!Number.isInteger(input.teamCount) || input.teamCount > 20)) {
+    throw new Error("تعداد تیم باید عدد صحیحی بین ۱ تا ۲۰ باشد.");
+  }
+  if (input.weeklyCapacityPerTeam !== null && input.weeklyCapacityPerTeam > 40) {
+    throw new Error("ظرفیت هفتگی هر تیم نباید بیشتر از ۴۰ نفر-روز باشد.");
+  }
+  const shares = phaseDefinitions.map((phase) => input.phaseShares[phase.shareKey]);
+  if (shares.some((share) => !Number.isFinite(share) || share < 0 || share > 1)) {
+    throw new Error("سهم هر فاز باید بین صفر و یک باشد.");
+  }
+  if (Math.abs(shares.reduce((sum, share) => sum + share, 0) - 1) > 1e-8) {
+    throw new Error("مجموع سهم چهار فاز باید دقیقاً ۱۰۰٪ باشد.");
+  }
+  const overrideIds = input.effortOverrides.map((item) => item.domainId);
+  if (new Set(overrideIds).size !== overrideIds.length) throw new Error("برای هر دامنه فقط یک بازنویسی effort ثبت کنید.");
+  for (const item of input.effortOverrides) {
+    if (!getDomainById(item.domainId)) throw new Error(`دامنهٔ بازنویسی نامعتبر است: ${item.domainId}`);
+    if (!Number.isFinite(item.personDays) || item.personDays < 0) throw new Error("نفر-روز بازنویسی‌شده باید صفر یا بیشتر باشد.");
+  }
+  return [...new Set(input.domainIds)];
 }
 
-function normalizeAssumptions(input?: ScenarioAssumptions): Required<ScenarioAssumptions> & { impactDepth: number } {
-  const teamCount = clamp(Math.round(input?.teamCount ?? 1), 1, 20);
-  const weeklyCapacity = clamp(round(input?.weeklyCapacity ?? 5), 1, 40);
-  const personDayRate = input?.personDayRate && input.personDayRate > 0 ? Math.round(clamp(input.personDayRate, 1, 1_000_000_000)) : null;
-  const bufferPercent = clamp(round(input?.bufferPercent ?? 20), 0, 100);
-  return { teamCount, weeklyCapacity, personDayRate, bufferPercent, impactDepth: 1 };
-}
-
-function effortForDomain(id: string): DomainEffort {
-  const domain = getDomainById(id);
-  if (!domain) return { personDays: 0, apiSurfaces: 0, integrations: 0, dataMigrations: 0, uiSurfaces: 0 };
-  return { ...groupDefaults[domain.group], ...domainOverrides[id] };
-}
-
-function directImpact(selectedIds: string[]) {
-  const selected = new Set(selectedIds);
+function impactedDomainIds(selectedIds: string[], depth: ScenarioPlannerInput["impactDepth"]): Set<string> {
   const impacted = new Set(selectedIds);
-  for (const relationship of domainRelationships) {
-    if (selected.has(relationship.from) || selected.has(relationship.to)) {
-      impacted.add(relationship.from);
-      impacted.add(relationship.to);
+  if (depth === "selected") return impacted;
+
+  if (depth === "direct") {
+    const selected = new Set(selectedIds);
+    for (const relationship of domainRelationships) {
+      if (selected.has(relationship.from) || selected.has(relationship.to)) {
+        impacted.add(relationship.from);
+        impacted.add(relationship.to);
+      }
+    }
+    return impacted;
+  }
+
+  const queue = [...selectedIds];
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const relationship of domainRelationships) {
+      let neighbor: string | null = null;
+      if (relationship.from === current) neighbor = relationship.to;
+      else if (relationship.to === current) neighbor = relationship.from;
+      if (neighbor && !impacted.has(neighbor)) {
+        impacted.add(neighbor);
+        queue.push(neighbor);
+      }
     }
   }
   return impacted;
 }
 
-function processImpacts(domainIds: string[]) {
-  const ids = [...new Set(domainIds.flatMap((id) => processDomainMap[id] ?? []))];
-  return ids.map((id) => getProcessById(id)).filter((process): process is ProcessDefinition => Boolean(process));
+function uniqueRelationships(relationships: DomainRelationship[]): DomainRelationship[] {
+  const seen = new Set<string>();
+  return relationships.filter((relationship) => {
+    const key = `${relationship.from}\u0000${relationship.to}\u0000${relationship.label}\u0000${relationship.explanation}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
-export function calculateScenarioEstimate(input: ScenarioInput): ScenarioEstimate {
-  const title = input.title.trim();
-  if (!title) throw new Error("عنوان سناریو الزامی است.");
-  const selectedDomainIds = [...new Set(input.domainIds)].filter((id) => Boolean(getDomainById(id)));
-  if (selectedDomainIds.length === 0) throw new Error("حداقل یک دامنه معتبر برای سناریو انتخاب کنید.");
+function processImpacts(domainIds: string[]): ProcessDefinition[] {
+  const processIds = [...new Set(domainIds.flatMap((id) => processDomainMap[id] ?? []))];
+  return processIds.map((id) => getProcessById(id)).filter((process): process is ProcessDefinition => Boolean(process));
+}
 
-  const assumptions = normalizeAssumptions(input.assumptions);
-  const impactedIds = directImpact(selectedDomainIds);
-  const impactedDomains = domains.filter((domain) => impactedIds.has(domain.id)).map((domain) => {
-    const effort = effortForDomain(domain.id);
-    return { id: domain.id, title: domain.title, group: domain.group, priority: domain.priority, selected: selectedDomainIds.includes(domain.id), status: domain.status, complexityDays: effort.personDays };
+function effortForDomain(id: string, overrideByDomain: Map<string, number>): DomainEffort {
+  const domain = getDomainById(id);
+  if (!domain) return { personDays: 0, apiSurfaces: 0, integrations: 0, dataMigrations: 0, uiSurfaces: 0 };
+  const effort = { ...groupDefaults[domain.group], ...domainOverrides[id] };
+  const override = overrideByDomain.get(id);
+  return override === undefined ? effort : { ...effort, personDays: override };
+}
+
+function distributePhaseEffort(personDays: number, shares: ScenarioPlannerInput["phaseShares"]): TechnicalEstimate["phases"] {
+  const totalTenths = Math.round(personDays * 10);
+  if (!Number.isSafeInteger(totalTenths)) throw new Error("نفر-روز برنامه‌ریزی‌شده برای توزیع دقیق فازها بیش‌ازحد بزرگ است.");
+  const phases = phaseDefinitions.map((phase, index) => {
+    const exactTenths = totalTenths * shares[phase.shareKey];
+    const wholeTenths = Math.floor(exactTenths);
+    return { ...phase, index, exactTenths, wholeTenths, remainder: exactTenths - wholeTenths };
   });
-  const relationships = domainRelationships.filter((relationship) => impactedIds.has(relationship.from) && impactedIds.has(relationship.to));
-  const processImpacts = processImpactsFor(impactedDomains.map((domain) => domain.id));
-  const effort = impactedDomains.reduce((total, domain) => {
-    const item = effortForDomain(domain.id);
-    return { personDays: total.personDays + item.personDays, apiSurfaces: total.apiSurfaces + item.apiSurfaces, integrations: total.integrations + item.integrations, dataMigrations: total.dataMigrations + item.dataMigrations, uiSurfaces: total.uiSurfaces + item.uiSurfaces };
+  let remainingTenths = totalTenths - phases.reduce((sum, phase) => sum + phase.wholeTenths, 0);
+  const byLargestRemainder = [...phases].sort((left, right) => right.remainder - left.remainder || left.index - right.index);
+  for (const phase of byLargestRemainder) {
+    if (remainingTenths <= 0) break;
+    phase.wholeTenths += 1;
+    remainingTenths -= 1;
+  }
+  const tenthsByPhase = new Map(phases.map((phase) => [phase.id, phase.wholeTenths]));
+  return phaseDefinitions.map((phase) => ({
+    id: phase.id,
+    title: phase.title,
+    share: shares[phase.shareKey],
+    personDays: (tenthsByPhase.get(phase.id) ?? 0) / 10,
+  }));
+}
+
+export function calculateScenarioEstimate(input: ScenarioPlannerInput): TechnicalEstimate {
+  const selectedDomainIds = validatePlannerInput(input);
+  const selected = new Set(selectedDomainIds);
+  const impactedIds = impactedDomainIds(selectedDomainIds, input.impactDepth);
+  const overrideByDomain = new Map(input.effortOverrides.map((override) => [override.domainId, override.personDays]));
+
+  const impactedDomains = domains
+    .filter((domain) => impactedIds.has(domain.id))
+    .map((domain) => {
+      const effort = effortForDomain(domain.id, overrideByDomain);
+      return {
+        id: domain.id,
+        title: domain.title,
+        group: domain.group,
+        priority: domain.priority,
+        selected: selected.has(domain.id),
+        status: domain.status,
+        complexityDays: effort.personDays,
+      };
+    });
+  const relationships = uniqueRelationships(domainRelationships.filter((relationship) => impactedIds.has(relationship.from) && impactedIds.has(relationship.to)));
+  const processImpactsResult = processImpacts(impactedDomains.map((domain) => domain.id));
+  const volume = impactedDomains.reduce((total, domain) => {
+    const item = effortForDomain(domain.id, overrideByDomain);
+    return {
+      personDays: total.personDays + item.personDays,
+      apiSurfaces: total.apiSurfaces + item.apiSurfaces,
+      integrations: total.integrations + item.integrations,
+      dataMigrations: total.dataMigrations + item.dataMigrations,
+      uiSurfaces: total.uiSurfaces + item.uiSurfaces,
+    };
   }, { personDays: 0, apiSurfaces: 0, integrations: 0, dataMigrations: 0, uiSurfaces: 0 });
-  const basePersonDays = round(4 + effort.personDays + relationships.length * 1.5 + processImpacts.length * 1.5 + effort.integrations * 1.5 + effort.dataMigrations * 1.5);
-  const personDays = round(basePersonDays * (1 + assumptions.bufferPercent / 100));
-  const calendarWeeks = Math.max(1, Math.ceil(personDays / (assumptions.teamCount * assumptions.weeklyCapacity)));
-  const cost = assumptions.personDayRate ? { low: Math.round(personDays * assumptions.personDayRate * 0.85), high: Math.round(personDays * assumptions.personDayRate * 1.15), currency: "تومان" as const } : null;
-  const changeVolume = { domainCount: impactedDomains.length, selectedDomainCount: selectedDomainIds.length, relationshipCount: relationships.length, processCount: processImpacts.length, apiSurfaceCount: effort.apiSurfaces, integrationCount: effort.integrations, dataMigrationCount: effort.dataMigrations, uiSurfaceCount: effort.uiSurfaces, taskCount: Math.max(4, Math.ceil(personDays / 2)), phaseCount: 4 as const };
-  const phases = phaseShares.map((phase) => ({ ...phase, personDays: round(personDays * phase.share) }));
-  const hasOpenDecision = impactedDomains.some((domain) => domain.status === "OPEN_DECISION");
+
+  const basePersonDays = roundTenth(
+    4 + volume.personDays + relationships.length * 1.5 + processImpactsResult.length * 1.5 + volume.integrations * 1.5 + volume.dataMigrations * 1.5,
+  );
+  const adjustedBasePersonDays = roundTenth(Math.max(0, basePersonDays * (1 + input.effortAdjustmentPercent / 100)));
+  const reservePersonDays = roundTenth(adjustedBasePersonDays * input.riskReservePercent / 100);
+  const personDays = roundTenth(adjustedBasePersonDays + reservePersonDays);
+  const calendarWeeks = input.teamCount !== null && input.weeklyCapacityPerTeam !== null
+    ? Math.ceil(personDays / (input.teamCount * input.weeklyCapacityPerTeam))
+    : null;
+  const phases = distributePhaseEffort(personDays, input.phaseShares);
+  const changeVolume: TechnicalEstimate["changeVolume"] = {
+    domainCount: impactedDomains.length,
+    selectedDomainCount: selectedDomainIds.length,
+    relationshipCount: relationships.length,
+    processCount: processImpactsResult.length,
+    apiSurfaceCount: volume.apiSurfaces,
+    integrationCount: volume.integrations,
+    dataMigrationCount: volume.dataMigrations,
+    uiSurfaceCount: volume.uiSurfaces,
+    phaseCount: 4,
+  };
+
   const warnings = [
-    ...(cost ? [] : ["نرخ نفر-روز وارد نشده است؛ هزینه فقط پس از ورود نرخ محاسبه می‌شود."]),
-    ...(hasOpenDecision ? ["حداقل یک دامنه تصمیم باز دارد؛ اطمینان برآورد پایین‌تر است."] : []),
-    ...(relationships.length > 0 ? ["وابستگی‌های مستقیم دامنه‌ها در حجم تغییر لحاظ شده‌اند."] : []),
+    ...(calendarWeeks === null ? ["تعداد تیم یا ظرفیت مؤثر مشخص نیست؛ زمان تقویمی محاسبه نشده است."] : []),
+    ...(calendarWeeks === null ? [] : ["زمان، ظرفیت تجمیعی است و مسیر بحرانی یا تعهد تاریخ تحویل نیست."]),
+    ...(relationships.length > 0 ? ["وابستگی‌های دامنه در عمق انتخاب‌شده در حجم تغییر لحاظ شده‌اند."] : []),
+    ...(impactedDomains.some((domain) => domain.status === "OPEN_DECISION") ? ["دست‌کم یک دامنهٔ درگیر تصمیم باز دارد."] : []),
+    ...(input.effortOverrides.length > 0 ? ["نفر-روز دامنه‌های مشخص‌شده با برآورد مالک جایگزین شده‌اند."] : []),
   ];
+
   return {
-    title,
-    description: input.description?.trim() ?? "",
     selectedDomainIds,
     impactedDomains,
     relationships,
-    processImpacts,
-    assumptions,
-    metrics: { basePersonDays, personDays, calendarWeeks, cost },
-    changeVolume,
+    processImpacts: processImpactsResult,
+    metrics: { basePersonDays, adjustedBasePersonDays, reservePersonDays, personDays, calendarWeeks },
     phases,
-    confidence: hasOpenDecision ? "low" : impactedDomains.length <= 3 ? "high" : "medium",
+    changeVolume,
     warnings,
   };
-}
-
-function processImpactsFor(domainIds: string[]) {
-  return processImpacts(domainIds);
 }
