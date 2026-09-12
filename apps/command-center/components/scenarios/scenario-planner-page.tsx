@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { ScenarioEstimate, ScenarioGateDecision, ScenarioRequestDraft, StrategicScenario } from "../../lib/scenario-types";
-import { restrictScenarioDraftToRoster } from "../../lib/scenario-restore";
+import { requestDraftFromSnapshot, restrictScenarioDraftToRoster } from "../../lib/scenario-restore";
 import { Badge } from "../ui/badge";
 import { ScenarioAssumptionsForm, createScenarioRequestDraft } from "./scenario-assumptions-form";
 import { ScenarioCatalogSection } from "./scenario-catalog-section";
@@ -44,17 +44,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isScenarioEstimate(value: unknown): value is ScenarioEstimate {
   return isRecord(value) && value.modelVersion === "scenario-business-case/v1" && Array.isArray(value.cases);
-}
-
-function requestDraftFromSnapshot(value: unknown): ScenarioRequestDraft | null {
-  if (!isRecord(value)) return null;
-  const { catalogSnapshot: _catalogSnapshot, ...candidate } = value;
-  if (
-    typeof candidate.title === "string" && Array.isArray(candidate.domainIds) && Array.isArray(candidate.cases) &&
-    Array.isArray(candidate.kpis) && Array.isArray(candidate.milestones) && Array.isArray(candidate.fieldEvidence) &&
-    isRecord(candidate.gateDecision)
-  ) return candidate as unknown as ScenarioRequestDraft;
-  return null;
 }
 
 function stringArray(value: unknown): string[] {

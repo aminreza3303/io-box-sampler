@@ -2,6 +2,8 @@
 
 import React, { useState, type FormEvent } from "react";
 import type { ScenarioEstimate, ScenarioGateDecision } from "../../lib/scenario-types";
+import { unwrapScenarioAssumptions } from "../../lib/scenario-restore";
+import { evaluateKpiActual } from "../../lib/scenario-kpi-display";
 
 const numberFormat = new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 1 });
 const currencyLabels: Record<string, string> = { TOMAN: "تومان", USD: "دلار", IQD: "دینار" };
@@ -37,8 +39,7 @@ function evidenceSource(evidence: Record<string, unknown>): string {
 }
 
 function collectEvidence(assumptions: unknown): Array<{ field: string; evidence: Record<string, unknown> }> {
-  const source = record(assumptions);
-  const input = record(source?.sourceAssumptions) ?? source;
+  const input = unwrapScenarioAssumptions(assumptions);
   if (!input) return [];
   const collected: Array<{ field: string; evidence: Record<string, unknown> }> = [];
   const push = (field: string, value: unknown) => { const evidence = record(value); if (evidence && typeof evidence.kind === "string") collected.push({ field, evidence }); };
@@ -135,7 +136,7 @@ function VersionedEstimate({ estimate, assumptions, onDecisionChange }: { estima
 
     {estimate.comparison?.differingInputs?.length > 0 && <section className="rounded-xl border border-emerald-100 bg-white p-4"><h3 className="font-black">ورودی‌های متفاوت ثبت‌شده</h3><ul className="mt-2 flex flex-wrap gap-2 text-xs">{estimate.comparison.differingInputs.map((item) => <li key={item.field} className="rounded-lg bg-slate-50 px-3 py-2">{item.field}: {item.caseIds.join("، ")}</li>)}</ul></section>}
 
-    <section className="rounded-xl border border-emerald-100 bg-white p-4"><h3 className="font-black">KPI، گیت و اولویت</h3><div className="mt-3 grid gap-3 lg:grid-cols-2"> <div><h4 className="text-sm font-bold">KPI و گیت</h4>{items(estimate.kpiEvaluations).length ? <ul className="mt-2 space-y-2">{estimate.kpiEvaluations.map(({ kpi, status }) => { const actual = typeof kpi.actual === "number" && Number.isFinite(kpi.actual) ? kpi.actual : null; const measured = actual !== null; const met = measured && typeof kpi.target === "number" ? (kpi.operator === "gte" ? actual >= kpi.target : actual <= kpi.target) : null; return <li key={kpi.id} className="rounded-lg bg-slate-50 p-3 text-xs"><strong>{kpi.name}</strong> · هدف {display(kpi.target, kpi.unit)} · actual {display(actual, kpi.unit)} · {measured ? (met ? "هدف محقق" : "هدف محقق نشده") : "ارزیابی‌نشده؛ مقدار actual ثبت نشده"}{kpi.guardrail ? " · guardrail" : ""}<span className="block text-slate-500">{status === "unmeasured" ? "بدون سنجش واقعی" : `operator: ${kpi.operator}`}</span></li>; })}</ul> : <p className="mt-2 text-xs text-slate-500">KPI در snapshot ثبت نشده است.</p>}
+    <section className="rounded-xl border border-emerald-100 bg-white p-4"><h3 className="font-black">KPI، گیت و اولویت</h3><div className="mt-3 grid gap-3 lg:grid-cols-2"> <div><h4 className="text-sm font-bold">KPI و گیت</h4>{items(estimate.kpiEvaluations).length ? <ul className="mt-2 space-y-2">{estimate.kpiEvaluations.map(({ kpi }) => { const result = evaluateKpiActual(kpi.actual, kpi.target, kpi.operator); const resultLabel = result === "met" ? "هدف محقق" : result === "not_met" ? "هدف محقق نشده" : "ارزیابی‌نشده؛ actual، target و operator معتبر لازم است"; return <li key={kpi.id} className="rounded-lg bg-slate-50 p-3 text-xs"><strong>{kpi.name}</strong> · هدف {display(kpi.target, kpi.unit)} · actual {display(kpi.actual, kpi.unit)} · {resultLabel}{kpi.guardrail ? " · guardrail" : ""}<span className="block text-slate-500">operator: {kpi.operator === "gte" || kpi.operator === "lte" ? kpi.operator : "نامعتبر/ثبت‌نشده"}</span></li>; })}</ul> : <p className="mt-2 text-xs text-slate-500">KPI در snapshot ثبت نشده است.</p>}
         {estimate.gateDecision && <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-6"><strong>گیت فعلی:</strong> {estimate.gateDecision.decision ?? "بدون تصمیم"} · {estimate.gateDecision.reason || "دلیل ثبت نشده"}<p>شواهد: {estimate.gateDecision.evidence || "ثبت نشده"} · مالک: {estimate.gateDecision.owner || "ثبت نشده"} · بازبینی: {estimate.gateDecision.reviewDate || "ثبت نشده"}</p></div>}</div>
       <div><h4 className="text-sm font-bold">اولویت و provenance</h4>{priority ? <><p className="mt-2 text-xs">امتیاز وزنی: {display(priority.weightedScore)}</p><ul className="mt-2 space-y-1 text-xs">{items(priority.criteria).map((criterionValue, index) => { const criterion = record(criterionValue); const weight = items(priority.weights).map(record).find((item) => item?.criterionId === criterion?.id); return <li key={`${String(criterion?.id)}-${index}`} className="rounded-lg bg-slate-50 p-2">{String(criterion?.label)} · امتیاز {display(criterion?.score)} · وزن {display(weight?.weight, "٪")} · جهت {String(criterion?.direction)} · منشأ {record(criterion?.source) ? evidenceLabel(record(criterion?.source)!) : "ثبت‌نشده"}</li>; })}</ul></> : <p className="mt-2 text-xs text-slate-500">امتیاز اولویت ساخته نشده است.</p>}</div></div>
     </section>

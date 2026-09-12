@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { ScenarioBusinessCasePanel } from "../../components/scenarios/scenario-business-case-panel";
+import { evaluateKpiActual } from "../../lib/scenario-kpi-display";
 
 describe("ScenarioBusinessCasePanel", () => {
   it("renders nothing for a null result", () => {
@@ -35,5 +36,16 @@ describe("ScenarioBusinessCasePanel", () => {
     expect(html).toContain("نامشخص / نیازمند داده");
     expect(html).toContain("critical path محاسبه نشده");
     expect(html).not.toMatch(/ROI<\/th><td[^>]*>۰(?:<\/td>)/);
+  });
+
+  it("does not evaluate a KPI unless actual, target and a recognized operator are present", () => {
+    expect(evaluateKpiActual(8, 5, "gte")).toBe("met");
+    expect(evaluateKpiActual(4, 5, "gte")).toBe("not_met");
+    expect(evaluateKpiActual(4, 5, "lte")).toBe("met");
+    expect(evaluateKpiActual(8, 5, "lte")).toBe("not_met");
+    expect(evaluateKpiActual(4, 5, "unknown")).toBe("unmeasured");
+    expect(evaluateKpiActual(4, 5, null)).toBe("unmeasured");
+    expect(evaluateKpiActual(null, 5, "gte")).toBe("unmeasured");
+    expect(evaluateKpiActual(4, null, "gte")).toBe("unmeasured");
   });
 });

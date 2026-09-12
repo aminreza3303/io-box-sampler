@@ -1,3 +1,5 @@
+import { unwrapScenarioAssumptions } from "../../lib/scenario-restore";
+
 const MAX_CONTEXT_LENGTH = 12_000;
 
 type JsonRecord = Record<string, unknown>;
@@ -52,14 +54,54 @@ function evidenceFields(value: unknown, prefix = "", limit = 18): JsonRecord[] {
   });
 }
 
+function moneyConversions(value: unknown): JsonRecord[] {
+  if (!Array.isArray(value)) return [];
+  const allowedFields = new Set(["personDayRate", "oneTimeExternalCost", "monthlyOperatingCost", "benefitNetContribution"]);
+  return value.slice(0, 12).flatMap((entry) => {
+    const item = record(entry);
+    if (!item || typeof item.field !== "string" || !allowedFields.has(item.field)) return [];
+    return [{
+      field: item.field, benefitDriverId: boundedString(item.benefitDriverId, 80),
+      originalCurrency: boundedString(item.originalCurrency, 12), originalAmount: finite(item.originalAmount),
+      convertedAmount: finite(item.convertedAmount), rate: finite(item.rate), rateDate: boundedString(item.rateDate, 80),
+      source: boundedString(item.source, 160),
+    }];
+  });
+}
+
+function catalogMetadata(value: unknown): JsonRecord | null {
+  const item = record(value);
+  if (!item) return null;
+  const gate = record(item.gate);
+  const priority = record(item.priority);
+  return {
+    id: boundedString(item.id, 80), track: boundedString(item.track, 32), lane: boundedString(item.lane, 40),
+    title: boundedString(item.title, 120), summary: boundedString(item.summary, 240), valueHypothesis: boundedString(item.valueHypothesis, 240),
+    domainIds: stringList(item.domainIds, 28), suggestedOwner: boundedString(item.suggestedOwner, 100),
+    sourceReferences: Array.isArray(item.sourceReferences) ? item.sourceReferences.slice(0, 8).flatMap((value) => {
+      const source = record(value);
+      return source ? [{ document: boundedString(source.document, 120), locator: boundedString(source.locator, 100), label: boundedString(source.label, 80) }] : [];
+    }) : [],
+    gate: gate ? { title: boundedString(gate.title, 100), requiredEvidence: stringList(gate.requiredEvidence, 8), decision: record(gate.decision) ? { decision: boundedString(record(gate.decision)?.decision, 20), reason: boundedString(record(gate.decision)?.reason, 160) } : null } : null,
+    priority: priority ? {
+      suggestedOrder: finite(priority.suggestedOrder),
+      criteria: Array.isArray(priority.criteria) ? priority.criteria.slice(0, 8).flatMap((value) => { const criterion = record(value); return criterion ? [{ label: boundedString(criterion.label, 80), score: finite(criterion.score), source: evidence(criterion.source) }] : []; }) : [],
+      weights: Array.isArray(priority.weights) ? priority.weights.slice(0, 8).flatMap((value) => { const weight = record(value); return weight ? [{ criterionId: boundedString(weight.criterionId, 32), weight: finite(weight.weight), source: evidence(weight.source) }] : []; }) : [],
+    } : null,
+  };
+}
+
 function assumptionsSnapshot(value: unknown): JsonRecord | null {
-  const envelope = record(value);
-  const input = record(envelope?.sourceAssumptions) ?? envelope;
+  const input = unwrapScenarioAssumptions(value);
   if (!input) return null;
   const cases = Array.isArray(input.cases) ? input.cases.slice(0, 3).flatMap((entry) => {
     const item = record(entry);
     if (!item) return [];
     const shares = record(item.phaseShares);
+    const overrides = Array.isArray(item.effortOverrides) ? item.effortOverrides.slice(0, 28).flatMap((overrideValue) => {
+      const override = record(overrideValue);
+      return override ? [{ domainId: boundedString(override.domainId, 80), personDays: finite(override.personDays), source: evidence(override.source) }] : [];
+    }) : [];
     const drivers = Array.isArray(item.benefitDrivers) ? item.benefitDrivers.slice(0, 8).flatMap((driverValue) => {
       const driver = record(driverValue);
       return driver ? [{
@@ -77,7 +119,7 @@ function assumptionsSnapshot(value: unknown): JsonRecord | null {
       manualTeamCount: finite(item.manualTeamCount), weeklyCapacityPerTeam: finite(item.weeklyCapacityPerTeam),
       phaseShares: shares ? Object.fromEntries(["product", "design", "development", "delivery"].map((key) => [key, finite(shares[key])])) : null,
       personDayRate: finite(item.personDayRate), oneTimeExternalCost: finite(item.oneTimeExternalCost), monthlyOperatingCost: finite(item.monthlyOperatingCost),
-      benefitDrivers: drivers,
+      effortOverrides: overrides, moneyConversions: moneyConversions(item.moneyConversions), benefitDrivers: drivers,
       fieldEvidence: evidenceFields(item.fieldEvidence, `cases.${boundedString(item.id, 32)}`, 8),
     }];
   }) : [];
@@ -102,6 +144,7 @@ function assumptionsSnapshot(value: unknown): JsonRecord | null {
   }) : [];
   return {
     title: boundedString(input.title, 120), description: boundedString(input.description, 240),
+    catalogSnapshot: catalogMetadata(input.catalogSnapshot),
     domainIds: stringList(input.domainIds, 28), projectIds: stringList(input.projectIds, 12), teamIds: stringList(input.teamIds, 12),
     impactDepth: boundedString(input.impactDepth, 24), currency: boundedString(input.currency, 12), horizonMonths: finite(input.horizonMonths),
     cases, kpis,
@@ -159,6 +202,13 @@ function estimateSnapshot(value: unknown): JsonRecord | null {
         effortAdjustmentPercent: finite(record(item.inputs)?.effortAdjustmentPercent), riskReservePercent: finite(record(item.inputs)?.riskReservePercent),
         manualTeamCount: finite(record(item.inputs)?.manualTeamCount), weeklyCapacityPerTeam: finite(record(item.inputs)?.weeklyCapacityPerTeam),
         personDayRate: finite(record(item.inputs)?.personDayRate), oneTimeExternalCost: finite(record(item.inputs)?.oneTimeExternalCost), monthlyOperatingCost: finite(record(item.inputs)?.monthlyOperatingCost),
+        phaseShares: record(record(item.inputs)?.phaseShares) ? Object.fromEntries(["product", "design", "development", "delivery"].map((key) => [key, finite(record(record(item.inputs)?.phaseShares)?.[key])])) : null,
+        effortOverrides: Array.isArray(record(item.inputs)?.effortOverrides) ? (record(item.inputs)?.effortOverrides as unknown[]).slice(0, 28).flatMap((value) => {
+          const override = record(value);
+          return override ? [{ domainId: boundedString(override.domainId, 80), personDays: finite(override.personDays), source: evidence(override.source) }] : [];
+        }) : [],
+        moneyConversions: moneyConversions(record(item.inputs)?.moneyConversions),
+        fieldEvidence: evidenceFields(record(item.inputs)?.fieldEvidence, `estimate.cases.${boundedString(item.caseId, 32)}`, 12),
         benefitDrivers: Array.isArray(record(item.inputs)?.benefitDrivers) ? (record(item.inputs)?.benefitDrivers as unknown[]).slice(0, 8).flatMap((value) => {
           const driver = record(value);
           return driver ? [{ name: boundedString(driver.name, 80), startMonth: finite(driver.startMonth), probabilityPercent: finite(driver.probabilityPercent) }] : [];
@@ -182,6 +232,7 @@ function estimateSnapshot(value: unknown): JsonRecord | null {
   }) : [];
   return {
     modelVersion: boundedString(estimate.modelVersion, 80), title: boundedString(estimate.title, 120),
+    catalogSnapshot: catalogMetadata(estimate.catalogSnapshot),
     cases, comparison: { metrics, differingInputs: Array.isArray(comparison?.differingInputs) ? comparison.differingInputs.slice(0, 12).flatMap((value) => { const item = record(value); return item ? [{ field: boundedString(item.field, 80), caseIds: stringList(item.caseIds, 3) }] : []; }) : [] },
     kpiEvaluations: evaluations,
     gateDecision: gate ? { decision: boundedString(gate.decision, 20), reason: boundedString(gate.reason, 240), evidence: boundedString(gate.evidence, 300), owner: boundedString(gate.owner, 100), reviewDate: boundedString(gate.reviewDate, 80) } : null,
@@ -220,31 +271,51 @@ function serializeBounded(value: JsonRecord): string {
   // This fallback still returns valid JSON and preserves version, headline, missing inputs, KPI and gate signals.
   const compact = {
     modelVersion: boundedString(copy.modelVersion, 80),
-    assumptions: assumptions ? { title: boundedString(assumptions.title, 120), domainIds: stringList(assumptions.domainIds, 12), horizonMonths: finite(assumptions.horizonMonths), currency: boundedString(assumptions.currency, 12), gateDecision: assumptions.gateDecision } : null,
+    assumptions: assumptions ? {
+      title: boundedString(assumptions.title, 120), domainIds: stringList(assumptions.domainIds, 12), horizonMonths: finite(assumptions.horizonMonths), currency: boundedString(assumptions.currency, 12),
+      catalogSnapshot: assumptions.catalogSnapshot,
+      cases: Array.isArray(assumptions.cases) ? (assumptions.cases as JsonRecord[]).map((item) => ({
+        id: item.id, name: item.name, effortAdjustmentPercent: item.effortAdjustmentPercent, riskReservePercent: item.riskReservePercent,
+        effortOverrides: Array.isArray(item.effortOverrides) ? item.effortOverrides.slice(0, 6) : [],
+        moneyConversions: Array.isArray(item.moneyConversions) ? item.moneyConversions.slice(0, 4) : [],
+      })) : [],
+      gateDecision: assumptions.gateDecision,
+    } : null,
     estimate: estimate ? {
       modelVersion: boundedString(estimate.modelVersion, 80), title: boundedString(estimate.title, 120),
-      missingInputs: Array.isArray(estimate.evidenceCompleteness) ? [] : stringList(record(estimate.evidenceCompleteness)?.missingFields, 12),
+      missingInputs: stringList(record(estimate.evidenceCompleteness)?.missingFields, 24),
       cases: Array.isArray(estimate.cases) ? (estimate.cases as JsonRecord[]).map((item) => ({ id: item.id, name: item.name, financial: record(item.financial) ? { roiPercent: record(item.financial)?.roiPercent, initialInvestment: record(item.financial)?.initialInvestment, missingInputs: record(item.financial)?.missingInputs } : null })) : [],
       kpiEvaluations: estimate.kpiEvaluations, gateDecision: estimate.gateDecision, priority: estimate.priority,
-      evidenceCompleteness: estimate.evidenceCompleteness, provenance: estimate.provenance,
+      evidenceCompleteness: estimate.evidenceCompleteness,
     } : null,
-    provenance: copy.provenance,
+    provenance: Array.isArray(copy.provenance) ? copy.provenance.slice(0, 8) : [],
     truncated: true,
   };
   output = JSON.stringify(compact);
   if (output.length <= MAX_CONTEXT_LENGTH) return output;
-  return JSON.stringify({ modelVersion: boundedString(copy.modelVersion, 80), truncated: true, note: "snapshot context exceeded the safe size limit" });
+  return JSON.stringify({
+    modelVersion: boundedString(copy.modelVersion, 80),
+    estimate: { missingInputs: stringList(record(estimate?.evidenceCompleteness)?.missingFields, 24) },
+    truncated: true,
+    note: "snapshot context exceeded the safe size limit",
+  });
 }
 
 export function buildScenarioHermesContext(snapshot: { assumptions: unknown; estimate: unknown }): string {
   const assumptions = assumptionsSnapshot(snapshot.assumptions);
   const estimate = estimateSnapshot(snapshot.estimate);
+  const catalog = record(assumptions?.catalogSnapshot);
   const assumptionProvenance = [
     ...(assumptions ? (assumptions.fieldEvidence as JsonRecord[] ?? []) : []),
-    ...(assumptions && Array.isArray(assumptions.cases) ? (assumptions.cases as JsonRecord[]).flatMap((item) => item.fieldEvidence as JsonRecord[] ?? []) : []),
+    ...(assumptions && Array.isArray(assumptions.cases) ? (assumptions.cases as JsonRecord[]).flatMap((item) => [
+      ...(item.fieldEvidence as JsonRecord[] ?? []),
+      ...(Array.isArray(item.effortOverrides) ? (item.effortOverrides as JsonRecord[]).flatMap((override) => override.source ? [{ field: `effortOverride:${boundedString(override.domainId, 80)}`, evidence: override.source }] : []) : []),
+      ...(Array.isArray(item.moneyConversions) ? (item.moneyConversions as JsonRecord[]).flatMap((conversion) => conversion.source ? [{ field: `moneyConversion:${boundedString(conversion.field, 60)}`, kind: "money-conversion", source: conversion.source, rate: conversion.rate, rateDate: conversion.rateDate }] : []) : []),
+    ]) : []),
     ...(assumptions && Array.isArray(assumptions.kpis) ? (assumptions.kpis as JsonRecord[]).flatMap((item) => item.source ? [{ field: `kpi:${boundedString(item.name, 80)}`, evidence: item.source }] : []) : []),
     ...(assumptions && Array.isArray(assumptions.priorityCriteria) ? (assumptions.priorityCriteria as JsonRecord[]).flatMap((item) => item.source ? [{ field: `priority:${boundedString(item.label, 80)}`, evidence: item.source }] : []) : []),
     ...(assumptions && Array.isArray(assumptions.priorityWeights) ? (assumptions.priorityWeights as JsonRecord[]).flatMap((item) => item.source ? [{ field: `weight:${boundedString(item.criterionId, 32)}`, evidence: item.source }] : []) : []),
+    ...(catalog && Array.isArray(catalog.sourceReferences) ? (catalog.sourceReferences as JsonRecord[]).map((item) => ({ field: "catalogSnapshot", sourceReference: item })) : []),
   ].slice(0, 32);
   const safe: JsonRecord = {
     version: "scenario-hermes-context/v1",
