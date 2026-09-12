@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { ScenarioEstimate, ScenarioRequestDraft, StrategicScenario } from "../../lib/scenario-types";
+import { restrictScenarioDraftToRoster } from "../../lib/scenario-restore";
 import { Badge } from "../ui/badge";
 import { ScenarioAssumptionsForm, createScenarioRequestDraft } from "./scenario-assumptions-form";
 import { ScenarioCatalogSection } from "./scenario-catalog-section";
@@ -268,19 +269,21 @@ export function ScenarioPlannerPage() {
 
   function restoreAnalysis(item: SavedAnalysis) {
     const request = requestDraftFromSnapshot(item.assumptions);
-    if (request) setDraft(request);
+    let restoredDraft: ScenarioRequestDraft;
+    if (request) restoredDraft = request;
     else {
       const base = createScenarioRequestDraft();
       const restoredDomains = stringArray(item.selectedDomainIds);
-      setDraft({
+      restoredDraft = {
         ...base,
         title: item.title,
         description: item.description ?? "",
         domainIds: restoredDomains.length ? restoredDomains : base.domainIds,
         projectIds: stringArray(item.projectIds),
         teamIds: stringArray(item.teamIds),
-      });
+      };
     }
+    setDraft(restrictScenarioDraftToRoster(restoredDraft, projects.map(({ id }) => id), teams.map(({ id }) => id)));
     const savedEstimate = isScenarioEstimate(item.estimate) ? item.estimate : null;
     setEstimate(savedEstimate);
     setCurrentAnalysisId(savedEstimate ? item.id : null);
