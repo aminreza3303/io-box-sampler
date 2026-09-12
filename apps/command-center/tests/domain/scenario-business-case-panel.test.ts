@@ -38,6 +38,41 @@ describe("ScenarioBusinessCasePanel", () => {
     expect(html).not.toMatch(/ROI<\/th><td[^>]*>۰(?:<\/td>)/);
   });
 
+  it("labels the one-decimal planned effort total as rounded when displayed components do not add exactly", () => {
+    const estimate = {
+      modelVersion: "scenario-business-case/v1",
+      title: "تلاش اعشاری",
+      cases: [{
+        caseId: "base",
+        name: "پایه",
+        technical: {
+          selectedDomainIds: [],
+          impactedDomains: [],
+          metrics: { basePersonDays: 40, adjustedBasePersonDays: 30.625, reservePersonDays: 6.125, personDays: 36.75, calendarWeeks: null },
+          changeVolume: {},
+          phases: [],
+          warnings: [],
+        },
+        financial: { currency: "TOMAN", missingInputs: [], limitations: [] },
+        inputs: {},
+      }],
+      comparison: { metrics: [], differingInputs: [] },
+      kpiEvaluations: [],
+      gateDecision: null,
+      priority: null,
+      evidenceCompleteness: { recorded: 0, missing: 0, missingFields: [] },
+      warnings: [],
+      limitations: [],
+    };
+    const html = renderToStaticMarkup(createElement(ScenarioBusinessCasePanel, { estimate, assumptions: {}, onDecisionChange: vi.fn() }));
+
+    expect(html).toContain("≈ کل تلاش برنامه‌ریزی‌شده");
+    expect(html).toContain("گردشده به ۱ رقم اعشار");
+    expect(html).toContain("۳۰٫۶");
+    expect(html).toContain("۶٫۱");
+    expect(html).toContain("۳۶٫۸");
+  });
+
   it("does not evaluate a KPI unless actual, target and a recognized operator are present", () => {
     expect(evaluateKpiActual(8, 5, "gte")).toBe("met");
     expect(evaluateKpiActual(4, 5, "gte")).toBe("not_met");

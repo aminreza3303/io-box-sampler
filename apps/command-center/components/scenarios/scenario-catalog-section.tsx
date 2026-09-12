@@ -1,5 +1,6 @@
 import type { StrategicScenario } from "../../lib/scenario-types";
 import { strategicScenarioCatalog } from "../../lib/scenario-catalog";
+import { orderScenarioLaneForDisplay, travelScenarioOrderNote } from "../../lib/scenario-catalog-display";
 import { Badge } from "../ui/badge";
 
 const trackLabels = { wallet: "کیف پول", travel: "سفر" } as const;
@@ -46,9 +47,10 @@ export function ScenarioCatalogSection({
                 <h3 className="font-black">{track.title}</h3>
                 <span className="text-xs text-slate-400">{trackScenarios.length} کارت</span>
               </div>
+              {track.id === "travel" && <p className="mb-3 text-xs leading-5 text-slate-500">{travelScenarioOrderNote}</p>}
               <div className="space-y-5">
                 {lanes.map((lane) => {
-                  const scenarios = trackScenarios.filter((scenario) => scenario.lane === lane);
+                  const scenarios = orderScenarioLaneForDisplay(trackScenarios.filter((scenario) => scenario.lane === lane));
                   return (
                     <div key={lane}>
                       {track.id === "travel" && <h4 className="mb-2 text-xs font-bold text-slate-500">{laneLabels[lane]}</h4>}

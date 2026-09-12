@@ -12,6 +12,11 @@ import type {
 } from "../../lib/scenario-types";
 
 const confidenceSchema = z.enum(["low", "medium", "high"]).nullable();
+const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "تاریخ باید با قالب YYYY-MM-DD باشد.").refine((value) => {
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}, "تاریخ معتبر نیست.");
+const nullableDateSchema = dateSchema.nullable();
 const scenarioSourceSchema = z.object({
   document: z.string().trim().min(1).max(200),
   locator: z.string().trim().min(1).max(200),
@@ -29,7 +34,7 @@ const scenarioEvidenceSchema = z.discriminatedUnion("kind", [
     kind: z.literal("internal-data"),
     label: z.literal("دادهٔ داخلی"),
     source: z.string().trim().min(1).max(500),
-    recordedAt: z.string().trim().min(1).max(80),
+    recordedAt: dateSchema,
     owner: z.string().trim().min(1).max(120),
     confidence: confidenceSchema,
   }).strict(),
@@ -45,7 +50,7 @@ const scenarioEvidenceSchema = z.discriminatedUnion("kind", [
     label: z.literal("مصوب"),
     source: z.string().trim().max(500).nullable(),
     owner: z.string().trim().min(1).max(120),
-    recordedAt: z.string().trim().min(1).max(80),
+    recordedAt: dateSchema,
     confidence: confidenceSchema,
   }).strict(),
   z.object({
@@ -56,11 +61,6 @@ const scenarioEvidenceSchema = z.discriminatedUnion("kind", [
   }).strict(),
 ]);
 
-const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "تاریخ باید با قالب YYYY-MM-DD باشد.").refine((value) => {
-  const date = new Date(`${value}T00:00:00.000Z`);
-  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
-}, "تاریخ معتبر نیست.");
-const nullableDateSchema = dateSchema.nullable();
 const idSchema = z.string().trim().min(1).max(120);
 const evidenceField = <T extends string>(fields: readonly [T, ...T[]]) => z.array(z.object({
   field: z.enum(fields),
@@ -293,6 +293,10 @@ const scenarioRequestSchema = z.object({
   const weightIds = request.priorityWeights.map((item) => item.criterionId);
   if (new Set(weightIds).size !== weightIds.length) context.addIssue({ code: "custom", path: ["priorityWeights"], message: "وزن معیار تکراری است." });
   if (weightIds.some((id) => !criterionIds.includes(id))) context.addIssue({ code: "custom", path: ["priorityWeights"], message: "وزن به معیار موجودی ارجاع نمی‌دهد." });
+  if ((request.priorityCriteria.length > 0 || request.priorityWeights.length > 0)
+    && !request.priorityWeights.some((item) => item.weight > 0)) {
+    context.addIssue({ code: "custom", path: ["priorityWeights"], message: "برای امتیازدهی، دست‌کم یک وزن باید بزرگ‌تر از صفر باشد." });
+  }
 });
 
 const decisionRequestSchema = z.object({

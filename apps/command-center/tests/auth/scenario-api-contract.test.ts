@@ -91,7 +91,7 @@ const scenarioRequest = (): ScenarioRequest => ({
   guardrails: [],
   risks: [],
   priorityCriteria: [{ id: "value", label: "ارزش", score: 5, direction: "higher-is-better", source: modelEvidence }],
-  priorityWeights: [{ criterionId: "value", weight: 0, source: modelEvidence }],
+  priorityWeights: [{ criterionId: "value", weight: 100, source: modelEvidence }],
   fieldEvidence: ([
     "catalogScenarioId", "domainIds", "impactDepth", "currency", "horizonMonths", "teamIds",
     "kpis", "milestones", "guardrails", "risks", "priorityCriteria", "priorityWeights",
@@ -113,7 +113,7 @@ describe("scenario API contract", () => {
     const parsed = parseScenarioRequest(scenarioRequest());
     expect(parsed.cases[1].personDayRate).toBeNull();
     expect(parsed.cases[1].benefitDrivers[0].monthlyUnits).toBeNull();
-    expect(parsed.priorityWeights[0].weight).toBe(0);
+    expect(parsed.priorityWeights[0].weight).toBe(100);
   });
 
   it("requires the exact three distinct comparison cases and unique identifiers", () => {
@@ -152,11 +152,28 @@ describe("scenario API contract", () => {
         riskReservePercent: 100,
         benefitDrivers: [{ ...item.benefitDrivers[0], monthlyUnits: 0, netContributionPerUnit: -1, startMonth: 1, probabilityPercent: 100 }],
       })),
-      priorityCriteria: [{ ...request.priorityCriteria[0], score: 1 }],
-      priorityWeights: [{ ...request.priorityWeights[0], weight: 0 }],
+      priorityCriteria: [
+        { ...request.priorityCriteria[0], score: 1 },
+        { id: "risk", label: "ریسک", score: 1, direction: "risk-lower-is-better" as const, source: modelEvidence },
+      ],
+      priorityWeights: [
+        { ...request.priorityWeights[0], weight: 0 },
+        { criterionId: "risk", weight: 100, source: modelEvidence },
+      ],
     };
     expect(parseScenarioRequest(boundary).horizonMonths).toBe(1);
     expect(() => parseScenarioRequest({ ...boundary, horizonMonths: 60 })).not.toThrow();
+    expect(parseScenarioRequest(boundary).priorityWeights.map((item) => item.weight)).toEqual([0, 100]);
+  });
+
+  it("rejects priority scoring when every configured weight is zero", () => {
+    const request = scenarioRequest();
+    expect(() => parseScenarioRequest({
+      ...request,
+      priorityWeights: [{ ...request.priorityWeights[0], weight: 0 }],
+    })).toThrow();
+    expect(() => parseScenarioRequest({ ...request, priorityWeights: [] })).toThrow();
+    expect(() => parseScenarioRequest({ ...request, priorityCriteria: [], priorityWeights: [] })).not.toThrow();
   });
 
   it("bounds probability and requires driver start month inside the selected horizon", () => {
@@ -179,6 +196,28 @@ describe("scenario API contract", () => {
     expect(() => parseScenarioRequest({ ...request, kpis: [{ ...measuredKpi, actualSource: null }] })).toThrow();
     expect(() => parseScenarioRequest({ ...request, kpis: [{ ...request.kpis[0], actualAt: "2026-09-12" }] })).toThrow();
     expect(() => parseScenarioRequest({ ...request, kpis: [{ ...request.kpis[0], actualAt: "yesterday" }] })).toThrow();
+  });
+
+  it.each([
+    ["internal data", { kind: "internal-data", label: "دادهٔ داخلی", source: "سامانهٔ داخلی", recordedAt: "2026-09-12", owner: "محصول", confidence: "high" }],
+    ["approved", { kind: "approved", label: "مصوب", source: "صورت‌جلسه", owner: "مدیرعامل", recordedAt: "2026-09-12", confidence: "high" }],
+  ] as const)("accepts a valid calendar date for %s provenance", (_kind, evidence) => {
+    const request = scenarioRequest();
+    expect(() => parseScenarioRequest({
+      ...request,
+      fieldEvidence: request.fieldEvidence.map((item, index) => index === 0 ? { ...item, evidence } : item),
+    })).not.toThrow();
+  });
+
+  it.each([
+    ["internal data", { kind: "internal-data", label: "دادهٔ داخلی", source: "سامانهٔ داخلی", recordedAt: "not-a-date", owner: "محصول", confidence: "high" }],
+    ["approved", { kind: "approved", label: "مصوب", source: "صورت‌جلسه", owner: "مدیرعامل", recordedAt: "2026-02-30", confidence: "high" }],
+  ] as const)("rejects invalid recordedAt for %s provenance", (_kind, evidence) => {
+    const request = scenarioRequest();
+    expect(() => parseScenarioRequest({
+      ...request,
+      fieldEvidence: request.fieldEvidence.map((item, index) => index === 0 ? { ...item, evidence } : item),
+    })).toThrow();
   });
 
   it("rejects a recorded gate decision from an analysis request while still validating milestone dates", () => {
