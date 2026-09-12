@@ -343,7 +343,7 @@ export const strategicScenarioCatalog: StrategicScenario[] = [
     ideaNumber: 1,
     owner: "مدیر محصول سفر",
     firstStep: "تعریف سه SKU اقتصادی/استاندارد/VIP، قیمت‌گذاری بر پایهٔ مارجین و طراحی جدول bundle.",
-    benefitName: "حاشیهٔ خالص بسته به‌علاوهٔ اسپرد تبدیل و فروش افزودهٔ بیمه",
+    benefitName: "حاشیهٔ خالص بسته به‌علاوهٔ اسپرد تبدیل و فروش افزودهٔ بیمه (فرض سند: آغاز درآمد ماه ۲–۳)",
     kpis: [
       { id: "travel-bundle-net-margin", name: "حاشیهٔ خالص هر بسته", unit: "ارز سناریو" },
       { id: "travel-bundle-conversion", name: "تبدیل مشاهدهٔ پیشنهاد به خرید بسته", unit: "درصد" },
@@ -361,7 +361,7 @@ export const strategicScenarioCatalog: StrategicScenario[] = [
     lane: "experience",
     title: "حالت زیارت؛ تجربهٔ شش‌اقدامی",
     summary: "در زمان سفر، اپ به شش اقدام مرتبط محدود می‌شود و خدمات عمیق‌تر همچنان در دسترس می‌مانند.",
-    valueHypothesis: "یک لایهٔ تجربهٔ ساده بر دامنه‌های فعلی می‌تواند زمان رسیدن به اقدام و نگهداشت زائر را بهتر کند و ویترین بسته، Pass و دستیار باشد؛ ایده عمدتاً UI است و بک‌اند/مجوز تازه پیش‌فرض گرفته نمی‌شود.",
+    valueHypothesis: "یک لایهٔ تجربهٔ ساده بر دامنه‌های فعلی می‌تواند زمان رسیدن به اقدام و نگهداشت زائر را بهتر کند و ویترین بسته، Pass و دستیار باشد؛ سند اثر نگهداشت را از ماه ۱ فرض می‌کند. ایده عمدتاً UI است و بک‌اند/مجوز تازه پیش‌فرض گرفته نمی‌شود.",
     domainIds: ["redesign", "mobile", "i18n", "tickets", "hotel", "support", "wallet"],
     part: "A",
     ideaNumber: 2,
@@ -391,7 +391,7 @@ export const strategicScenarioCatalog: StrategicScenario[] = [
     ideaNumber: 3,
     owner: "مدیر رشد",
     firstStep: "بستهٔ مزایا بر پایهٔ فیچر پرمیوم ۱۳، قیمت‌گذاری و صف تمدید طراحی شود.",
-    benefitName: "درآمد تکرارشوندهٔ اشتراک و اثر تمدید",
+    benefitName: "درآمد تکرارشوندهٔ اشتراک و اثر تمدید (فرض سند: آغاز درآمد ماه ۲)",
     kpis: [
       { id: "travel-pass-renewal", name: "نرخ تمدید اشتراک", unit: "درصد" },
       { id: "travel-pass-net-margin", name: "حاشیهٔ خالص اشتراک پس از مزایا", unit: "ارز سناریو" },
@@ -415,7 +415,7 @@ export const strategicScenarioCatalog: StrategicScenario[] = [
     ideaNumber: 4,
     owner: "مدیر فنی (CTO)",
     firstStep: "SDK استاندارد PCI MPoC انتخاب و درخواست مجوز با بانک صادرکننده آغاز شود.",
-    benefitName: "حاشیهٔ خالص کارمزد پذیرندگی فعال",
+    benefitName: "حاشیهٔ خالص کارمزد پذیرندگی فعال (فرض سند: آغاز درآمد ماه ۶–۹)",
     kpis: [
       { id: "travel-softpos-active-merchants", name: "پذیرندگان فعال SoftPOS", unit: "پذیرنده" },
       { id: "travel-softpos-net-fee-margin", name: "حاشیهٔ خالص کارمزد", unit: "ارز سناریو" },
@@ -439,7 +439,7 @@ export const strategicScenarioCatalog: StrategicScenario[] = [
     ideaNumber: 5,
     owner: "توسعه بین‌الملل",
     firstStep: "feasibility فرودگاه مشهد/مرز نجف و بریف فرنچایز شبکهٔ نمایندگان تهیه شود.",
-    benefitName: "کارمزد صدور، شارژ اولیه و اسپرد به‌ازای هر محل",
+    benefitName: "کارمزد صدور، شارژ اولیه و اسپرد به‌ازای هر محل (فرض سند: آغاز درآمد از ماه ۶)",
     kpis: [
       { id: "travel-counter-acquisition-cost", name: "هزینهٔ جذب هر کاربر در پیشخوان", unit: "ارز سناریو", operator: "lte" },
       { id: "travel-counter-successful-issue-load", name: "صدور و شارژ موفق", unit: "درصد" },
@@ -464,7 +464,7 @@ export const strategicScenarioCatalog: StrategicScenario[] = [
     ideaNumber: 6,
     owner: "مدیر فنی (CTO)",
     firstStep: "پایلوت RAG عربی روی ۵۰ پرسش پرتکرار با پاسخ اپراتور پشتیبان اجرا شود.",
-    benefitName: "کاهش قابل‌سنجش بار پشتیبانی و اثر بر اشتراک Pass",
+    benefitName: "کاهش قابل‌سنجش بار پشتیبانی و اثر بر اشتراک Pass (فرض سند: صرفه‌جویی از ماه ۴)",
     kpis: [
       { id: "travel-assistant-answer-quality", name: "کیفیت پاسخ دستیار", unit: "درصد پاسخ درست" },
       { id: "travel-assistant-correct-handoff", name: "ارجاع صحیح پرسش حساس به انسان", unit: "درصد" },
@@ -489,7 +489,7 @@ export const strategicScenarioCatalog: StrategicScenario[] = [
     ideaNumber: 7,
     owner: "مدیر محصول بازار",
     firstStep: "۲۰ میزبان پایلوت از شبکهٔ فعلی انتخاب و پروتکل escrow/رزرو تعریف شود.",
-    benefitName: "کمیسیون خالص رزرو پس از هزینهٔ خدمت و بازپرداخت",
+    benefitName: "کمیسیون خالص رزرو پس از هزینهٔ خدمت و بازپرداخت (فرض سند: درآمد از ماه ۹)",
     kpis: [
       { id: "travel-hosts-net-booking-commission", name: "کمیسیون خالص رزرو", unit: "ارز سناریو" },
       { id: "travel-hosts-service-quality", name: "کیفیت خدمت میزبان", unit: "امتیاز" },
@@ -514,7 +514,7 @@ export const strategicScenarioCatalog: StrategicScenario[] = [
     ideaNumber: 8,
     owner: "مدیر محصول کارت",
     firstStep: "بریف شریک تولید و صف پیش‌ثبت‌نام با آستانهٔ پیشنهادی ۱۰٬۰۰۰ نفر آماده شود.",
-    benefitName: "فروش/رهن دستبند، کارمزد تراکنش و اسپانسرینگ احتمالی",
+    benefitName: "فروش/رهن دستبند، کارمزد تراکنش و اسپانسرینگ احتمالی (فرض سند: افق درآمد ماه ۱۲ به بعد)",
     kpis: [
       { id: "travel-nfc-bracelet-presignups", name: "پیش‌ثبت‌نام واجد شرایط", unit: "ثبت‌نام", guardrail: true },
       { id: "travel-nfc-hardware-economics", name: "اقتصاد خالص سخت‌افزار هر دستبند", unit: "ارز سناریو" },
