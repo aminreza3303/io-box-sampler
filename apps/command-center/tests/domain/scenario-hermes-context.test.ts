@@ -117,12 +117,15 @@ describe("buildScenarioHermesContext", () => {
   });
 
   it("unwraps a CEO-decision snapshot to retain the original saved inputs", () => {
+    const originalAssumptions = { title: "Original plan", domainIds: ["wallet"], cases: [] };
+    const firstDecision = { sourceAnalysisId: "source-1", sourceAssumptions: originalAssumptions, decision: { decision: "continue" } };
+    const secondDecision = { sourceAnalysisId: "source-2", sourceAssumptions: firstDecision, decision: { decision: "pause" } };
     const context = buildScenarioHermesContext({
-      assumptions: { sourceAnalysisId: "source-123", sourceAssumptions: { title: "Original plan", domainIds: ["wallet"], cases: [] }, decision: { decision: "continue" } },
+      assumptions: { sourceAnalysisId: "source-3", sourceAssumptions: secondDecision, decision: { decision: "continue" } },
       estimate: { modelVersion: "scenario-business-case/v1", title: "Original plan with decision", cases: [], gateDecision: { decision: "continue", reason: "approved", evidence: "minutes", owner: "CEO", reviewDate: null }, evidenceCompleteness: { recorded: 0, missing: 0, missingFields: [] } },
     });
     const parsed = JSON.parse(context) as Record<string, unknown>;
-    expect(parsed.sourceAnalysisId).toBe("source-123");
+    expect(parsed.sourceAnalysisId).toBe("source-3");
     expect(recordOf(parsed.assumptions)?.title).toBe("Original plan");
   });
 });
