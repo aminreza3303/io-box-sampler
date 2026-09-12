@@ -154,7 +154,10 @@ function impactedDomainIds(selectedIds: string[], depth: ScenarioPlannerInput["i
 function uniqueRelationships(relationships: DomainRelationship[]): DomainRelationship[] {
   const seen = new Set<string>();
   return relationships.filter((relationship) => {
-    const key = `${relationship.from}\u0000${relationship.to}\u0000${relationship.label}\u0000${relationship.explanation}`;
+    const [left, right] = relationship.from.localeCompare(relationship.to) <= 0
+      ? [relationship.from, relationship.to]
+      : [relationship.to, relationship.from];
+    const key = `${left}\u0000${right}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -183,7 +186,10 @@ function distributePhaseEffort(personDays: number, shares: ScenarioPlannerInput[
     return { ...phase, index, exactTenths, wholeTenths, remainder: exactTenths - wholeTenths };
   });
   let remainingTenths = totalTenths - phases.reduce((sum, phase) => sum + phase.wholeTenths, 0);
-  const byLargestRemainder = [...phases].sort((left, right) => right.remainder - left.remainder || left.index - right.index);
+  const byLargestRemainder = [...phases].sort((left, right) => {
+    const difference = right.remainder - left.remainder;
+    return Math.abs(difference) > 1e-9 ? difference : left.index - right.index;
+  });
   for (const phase of byLargestRemainder) {
     if (remainingTenths <= 0) break;
     phase.wholeTenths += 1;
@@ -234,8 +240,8 @@ export function calculateScenarioEstimate(input: ScenarioPlannerInput): Technica
   const basePersonDays = roundTenth(
     4 + volume.personDays + relationships.length * 1.5 + processImpactsResult.length * 1.5 + volume.integrations * 1.5 + volume.dataMigrations * 1.5,
   );
-  const adjustedBasePersonDays = roundTenth(Math.max(0, basePersonDays * (1 + input.effortAdjustmentPercent / 100)));
-  const reservePersonDays = roundTenth(adjustedBasePersonDays * input.riskReservePercent / 100);
+  const adjustedBasePersonDays = Math.max(0, basePersonDays * (1 + input.effortAdjustmentPercent / 100));
+  const reservePersonDays = adjustedBasePersonDays * input.riskReservePercent / 100;
   const personDays = roundTenth(adjustedBasePersonDays + reservePersonDays);
   const calendarWeeks = input.teamCount !== null && input.weeklyCapacityPerTeam !== null
     ? Math.ceil(personDays / (input.teamCount * input.weeklyCapacityPerTeam))

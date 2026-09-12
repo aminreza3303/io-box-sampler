@@ -35,7 +35,8 @@ describe("scenario planner", () => {
     expect(direct.impactedDomains.length).toBeGreaterThan(selected.impactedDomains.length);
     expect(transitive.impactedDomains).toHaveLength(domains.length - 1);
     expect(transitive.impactedDomains.map((domain) => domain.id)).not.toContain("donations");
-    expect(transitive.relationships).toHaveLength(domainRelationships.length);
+    const uniqueGraphEdges = new Set(domainRelationships.map((edge) => [edge.from, edge.to].sort().join(":")));
+    expect(transitive.relationships).toHaveLength(uniqueGraphEdges.size);
   });
 
   it("deduplicates selected domains, impacted domains, and graph edges", () => {
@@ -44,7 +45,7 @@ describe("scenario planner", () => {
       impactDepth: "direct",
     }));
     const domainIds = estimate.impactedDomains.map((domain) => domain.id);
-    const edgeIds = estimate.relationships.map((edge) => `${edge.from}:${edge.to}:${edge.label}`);
+    const edgeIds = estimate.relationships.map((edge) => [edge.from, edge.to].sort().join(":"));
 
     expect(estimate.selectedDomainIds).toEqual(["transfer"]);
     expect(new Set(domainIds).size).toBe(domainIds.length);
@@ -68,9 +69,9 @@ describe("scenario planner", () => {
     }));
 
     expect(estimate.metrics.basePersonDays).toBe(24.5);
-    expect(estimate.metrics.adjustedBasePersonDays).toBe(30.6);
-    expect(estimate.metrics.reservePersonDays).toBe(6.1);
-    expect(estimate.metrics.personDays).toBe(36.7);
+    expect(estimate.metrics.adjustedBasePersonDays).toBe(30.625);
+    expect(estimate.metrics.reservePersonDays).toBe(6.125);
+    expect(estimate.metrics.personDays).toBe(36.8);
     expect(estimate.impactedDomains.find((domain) => domain.id === "wallet")?.complexityDays).toBe(13);
   });
 
@@ -101,7 +102,7 @@ describe("scenario planner", () => {
     expect(estimate.phases.reduce((total, phase) => total + phase.share, 0)).toBeCloseTo(1, 10);
     const phaseEffortTenths = estimate.phases.reduce((total, phase) => total + Math.round(phase.personDays * 10), 0);
     expect(phaseEffortTenths).toBe(Math.round(estimate.metrics.personDays * 10));
-    expect(estimate.phases.map((phase) => phase.personDays)).toEqual([5.5, 7.4, 16.5, 7.3]);
+    expect(estimate.phases.map((phase) => phase.personDays)).toEqual([5.5, 7.4, 16.6, 7.3]);
     expect(() => calculateScenarioEstimate(plannerInput({
       phaseShares: { product: 0.2, design: 0.2, development: 0.2, delivery: 0.2 },
     }))).toThrow();
@@ -143,5 +144,9 @@ describe("scenario planner", () => {
       "multi-currency-transfer", "fx-market", "merchant-offer", "kyc-card", "mobile-rewrite",
     ]);
     expect(domains.some((domain) => domain.id === "gold")).toBe(true);
+    const manualGoldEstimate = calculateScenarioEstimate(plannerInput({ domainIds: ["gold"], impactDepth: "selected" }));
+    expect(manualGoldEstimate.selectedDomainIds).toEqual(["gold"]);
+    expect(manualGoldEstimate.impactedDomains.map((domain) => domain.id)).toEqual(["gold"]);
+    expect(manualGoldEstimate.processImpacts.map((process) => process.id)).toContain("gold");
   });
 });
